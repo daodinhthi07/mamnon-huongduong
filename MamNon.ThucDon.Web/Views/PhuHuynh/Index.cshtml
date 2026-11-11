@@ -1,0 +1,62 @@
+@{
+    Layout = null;
+    var ten = (string)ViewBag.TenTruong;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Thực đơn cho trẻ | @ten</title>
+    <meta name="theme-color" content="#ffb84d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Thực đơn" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:wght@600;700&display=swap" />
+    <link rel="stylesheet" href="~/css/phu-huynh.css" asp-append-version="true" />
+</head>
+<body>
+    <div id="ph-app" data-api="@ViewBag.ApiUrl" data-xem-truoc="@ViewBag.XemTruoc" data-ten-truong="@ten">
+        <header class="ph-dau">
+            <div class="ph-truong">🌻 @ten</div>
+            <h1 class="ph-tieu-de">THỰC ĐƠN CHO TRẺ</h1>
+            <div class="ph-tuan" id="ph-tuan">&nbsp;</div>
+            <div class="ph-khoang" id="ph-khoang">&nbsp;</div>
+            <div class="ph-banner" id="ph-banner" hidden>XEM TRƯỚC — thực đơn này chưa được công khai cho phụ huynh</div>
+            <div class="ph-dieu-huong" id="ph-dieu-huong">
+                <button type="button" id="ph-truoc" class="ph-nut">‹ Tuần trước</button>
+                <button type="button" id="ph-chia-se" class="ph-nut ph-nut-chia-se">Chia sẻ link</button>
+                <button type="button" id="ph-sau" class="ph-nut">Tuần sau ›</button>
+            </div>
+        </header>
+
+        <main>
+            <p class="ph-thong-bao" id="ph-thong-bao" hidden></p>
+
+            <div class="ph-chon-khoi" id="ph-chon-khoi" role="group" aria-label="Chọn khối">
+                <button type="button" data-khoi="nhaTre">🍼 Nhà trẻ</button>
+                <button type="button" data-khoi="mauGiao">🎒 Mẫu giáo</button>
+                <button type="button" data-khoi="ca">👨‍👩‍👧 Cả hai</button>
+            </div>
+
+            @* Máy tính: bảng nguyên tuần (của khối đang chọn) *@
+            <section class="ph-may-tinh" id="ph-may-tinh" aria-label="Thực đơn cả tuần"></section>
+
+            @* Điện thoại: từng ngày *@
+            <section class="ph-dien-thoai" id="ph-dien-thoai" aria-label="Thực đơn theo ngày">
+                <div class="ph-chon-ngay" id="ph-chon-ngay"></div>
+                <div class="ph-the-ngay" id="ph-the-ngay"></div>
+            </section>
+        </main>
+
+        <footer class="ph-chan">
+            <div>Chúc các bé ăn ngon miệng! ❤️</div>
+            <div class="ph-cap-nhat" id="ph-cap-nhat"></div>
+        </footer>
+    </div>
+    <script src="~/js/phu-huynh.js" asp-append-version="true"></script>
+</body>
+</html>
