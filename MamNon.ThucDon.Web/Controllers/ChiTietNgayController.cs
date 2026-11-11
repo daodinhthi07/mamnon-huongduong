@@ -309,7 +309,59 @@ public sealed class ChiTietNgayController : Controller
 
     /// <summary>AJAX: tính lại "gia vị" (3 cột) + "sáng" + "chính+xế" (2 cột) mỗi khi đổi món/sĩ số.</summary>
     [HttpPost("tinh-toan")]
-    public async Task<IActionResult> TinhToan([FromBody] ChiTietNgayTinhToanRequest req)
+    public async Task<IActionResult> TinhToan([FromBody] ChiTietNgayTinhToanRequest req) =>
+        Json(await TinhToanCoSoAsync(req));
+
+    /// <summary>AJAX (Trang chủ, tab "Cả hai" → "Chi tiết nguyên liệu &amp; giá"): số liệu nguyên liệu + đơn giá + thành tiền
+    /// của CẢ 3 CƠ SỞ trong 1 ngày, theo thực đơn và sĩ số ĐÃ LƯU — để dựng bảng theo dõi giống file mẫu
+    /// (tổng Nhà trẻ / Mẫu giáo, chia theo từng chợ, đơn giá, thành tiền từng chợ, tổng cộng).</summary>
+    [HttpGet("tong-hop")]
+    public async Task<IActionResult> TongHop(DateOnly ngay)
+    {
+        var khoiMg = await _db.KhoiHocs.AsNoTracking().FirstOrDefaultAsync(k => k.TenKhoi == "Mẫu giáo");
+        var khoiNt = await _db.KhoiHocs.AsNoTracking().FirstOrDefaultAsync(k => k.TenKhoi == "Nhà trẻ");
+        if (khoiMg is null || khoiNt is null) return Json(new { ok = false, loi = "Chưa có đủ 2 khối Mẫu giáo / Nhà trẻ." });
+
+        var thuTu = new[] { "TC", "PH", "ĐT" };
+        var dsCoSo = (await _db.CoSos.AsNoTracking().Where(x => x.IsActive).ToListAsync())
+            .OrderBy(c => { var i = Array.FindIndex(thuTu, t => string.Equals(t, (c.MaCoSo ?? "").Trim(), StringComparison.OrdinalIgnoreCase)); return i < 0 ? 99 : i; })
+            .ThenBy(c => c.TenCoSo).ToList();
+
+        var ketQua = new List<object>();
+        foreach (var cs in dsCoSo)
+        {
+            Dictionary<int, int?> mg = new(), nt = new();
+            var ngayHoc = await _db.NgayHocs.AsNoTracking().FirstOrDefaultAsync(n => n.CoSoId == cs.Id && n.Ngay == ngay);
+            if (ngayHoc is not null)
+            {
+                var cacThucDon = await _db.ThucDons.AsNoTracking().Where(t => t.CoSoId == cs.Id && t.NgayHocId == ngayHoc.Id).ToListAsync();
+                mg = cacThucDon.Where(t => t.KhoiId == khoiMg.Id).ToDictionary(t => t.LoaiBuaAnId, t => t.MonAnId);
+                nt = cacThucDon.Where(t => t.KhoiId == khoiNt.Id).ToDictionary(t => t.LoaiBuaAnId, t => t.MonAnId);
+            }
+            var dm = await _db.DinhMucAnNgays.AsNoTracking().Include(d => d.NhomChiPhi)
+                .Where(d => d.CoSoId == cs.Id && d.Ngay == ngay).ToListAsync();
+            int Suat(string ten) => dm.FirstOrDefault(d => d.NhomChiPhi.TenNhom == ten)?.SoSuatAn ?? 0;
+            var req = new ChiTietNgayTinhToanRequest
+            {
+                KhoiIdMauGiao = khoiMg.Id, KhoiIdNhaTre = khoiNt.Id, CoSoId = cs.Id, Ngay = ngay,
+                MonMauGiao = mg, MonNhaTre = nt,
+                SoSuatAnSang = Suat("Ăn sáng"), SoSuatMauGiao = Suat("Mẫu giáo"), SoSuatNhaTre = Suat("Nhà trẻ"),
+            };
+            var r = await TinhToanCoSoAsync(req);
+            var gv = await _tinhToanSvc.LayGiaViThatAsync(cs.Id, ngay);
+            ketQua.Add(new
+            {
+                coSoId = cs.Id, ma = (cs.MaCoSo ?? "").Trim(), ten = cs.TenCoSo,
+                soSuatAnSang = req.SoSuatAnSang, soSuatNhaTre = req.SoSuatNhaTre, soSuatMauGiao = req.SoSuatMauGiao,
+                coThucDon = mg.Values.Any(v => v is not null) || nt.Values.Any(v => v is not null),
+                sang = r.Sang, chinh = r.Chinh, giaVi = gv.DanhSach,
+            });
+        }
+        return Json(new { ok = true, ngay = ngay.ToString("yyyy-MM-dd"), coSo = ketQua });
+    }
+
+    /// <summary>Tính "sáng" + "chính+xế" + (số đã lưu nếu có) cho 1 (cơ sở, ngày) — dùng chung cho AJAX tính toán và bảng tổng hợp.</summary>
+    private async Task<ChiTietNgayTinhToanResponse> TinhToanCoSoAsync(ChiTietNgayTinhToanRequest req)
     {
         var dsBuaMg = await _db.LoaiBuaAns.Where(b => b.KhoiId == req.KhoiIdMauGiao).ToListAsync();
         var dsBuaNt = await _db.LoaiBuaAns.Where(b => b.KhoiId == req.KhoiIdNhaTre).ToListAsync();
@@ -388,7 +440,7 @@ public sealed class ChiTietNgayController : Controller
         // Mục 4: tách nguyên liệu dùng chung giữa nhiều món (VD "Canh A + Gà sốt B + Cháo C") ra từng dòng riêng cho từng món.
         _tinhToanSvc.TachTheoMon(response, nhuCauMonNt, nhuCauMonMg, maCoSoTinh);
 
-        return Json(response);
+        return response;
     }
 
     /// <summary>Lưu thực đơn + sĩ số cho đúng 1 (cơ sở, ngày). Món ăn (mục "1. Thực đơn") được
