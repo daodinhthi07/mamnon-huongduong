@@ -1,0 +1,51 @@
+@model List<NhomThucDonChoDuyet>
+@{
+    ViewData["Title"] = "Duyệt thực đơn";
+}
+
+<h1>Thực đơn chờ duyệt</h1>
+
+@if (!Model.Any())
+{
+    <p><em>Không có thực đơn nào đang chờ duyệt.</em></p>
+}
+else
+{
+    @foreach (var nhom in Model)
+    {
+        <div class="phieu-duyet-card">
+            <h2>@nhom.TenCoSo — @nhom.TenKhoi — Ngày @nhom.Ngay.ToString("dd/MM/yyyy")</h2>
+            <p>Người lập: @(nhom.NguoiLap ?? "(không rõ)") — Ngày lập: @(nhom.NgayLap?.ToString("dd/MM/yyyy") ?? "—")</p>
+
+            <table class="table">
+                <thead><tr><th>Bữa</th><th>Món ăn</th></tr></thead>
+                <tbody>
+                    @foreach (var dong in nhom.CacBua)
+                    {
+                        <tr>
+                            <td>@dong.TenBua</td>
+                            <td>@(dong.TenMon ?? "(chưa chọn món)")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="soan-thucdon-actions">
+                <form method="post" asp-controller="DuyetThucDon" asp-action="Duyet" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="coSoId" value="@nhom.CoSoId" />
+                    <input type="hidden" name="khoiId" value="@nhom.KhoiId" />
+                    <input type="hidden" name="ngayHocId" value="@nhom.NgayHocId" />
+                    <button type="submit" class="btn btn-primary">Duyệt</button>
+                </form>
+                <form method="post" asp-controller="DuyetThucDon" asp-action="TuChoi" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="coSoId" value="@nhom.CoSoId" />
+                    <input type="hidden" name="khoiId" value="@nhom.KhoiId" />
+                    <input type="hidden" name="ngayHocId" value="@nhom.NgayHocId" />
+                    <button type="submit" class="btn btn-secondary">Trả về nháp</button>
+                </form>
+            </div>
+        </div>
+    }
+}
