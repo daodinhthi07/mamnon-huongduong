@@ -1,0 +1,32 @@
+@model ChiTietChoViewModel
+@* Panel nhúng bằng AJAX vào /dashboard (xem ChoController.ChiTietPanel + wwwroot/js/dashboard.js
+   hàm xemChoTrongTrang/xemChoCoSo). Không dùng Layout, không có form đổi ngày (ngày đã cố
+   định theo cột đang xem trên Dashboard). *@
+
+<div data-cho-mode="panel">
+    <div class="cho-panel-head">
+        <div class="cho-tabs">
+            @foreach (var cs in Model.DsCoSo)
+            {
+                <button type="button" class="cho-tab @(cs.Id == Model.CoSoId ? "active" : "")"
+                        onclick="xemChoCoSo('@Model.Ngay.ToString("yyyy-MM-dd")', @cs.Id)">@cs.TenCoSo</button>
+            }
+        </div>
+        <div class="cho-panel-actions">
+            <a class="cho-tab" target="_blank" rel="noopener"
+               asp-controller="Cho" asp-action="ChiTiet"
+               asp-route-ngay="@Model.Ngay.ToString("yyyy-MM-dd")" asp-route-coSoId="@Model.CoSoId">Mở trang đầy đủ ↗</a>
+            <button type="button" class="cho-tab" onclick="dongChoPanel()">✕ Đóng</button>
+        </div>
+    </div>
+
+    @if (Model.CoSoId is null)
+    {
+        <p class="cho-empty">Chưa có cơ sở nào đang hoạt động trong hệ thống.</p>
+    }
+    else
+    {
+        <h2 style="margin:0 0 0.5rem">Chi tiết chợ — @Model.TenCoSo</h2>
+        @await Html.PartialAsync("_NoiDungChiTietCho", Model)
+    }
+</div>

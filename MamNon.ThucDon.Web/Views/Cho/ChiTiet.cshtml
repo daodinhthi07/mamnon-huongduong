@@ -1,0 +1,40 @@
+@model ChiTietChoViewModel
+@{
+    ViewData["Title"] = "Chi tiết chợ";
+}
+
+<h1>Chi tiết chợ — @(Model.TenCoSo ?? "chưa chọn cơ sở")</h1>
+
+<form method="get" asp-controller="Cho" asp-action="ChiTiet" class="cho-topbar">
+    <div class="form-group">
+        <label>Ngày</label>
+        <input type="date" name="ngay" class="form-control" value="@Model.Ngay.ToString("yyyy-MM-dd")" />
+    </div>
+    <input type="hidden" name="coSoId" value="@Model.CoSoId" />
+    <div class="form-group" style="align-self:flex-end">
+        <button type="submit" class="btn btn-secondary">Xem</button>
+    </div>
+</form>
+
+<div class="cho-tabs">
+    @foreach (var cs in Model.DsCoSo)
+    {
+        <a class="cho-tab @(cs.Id == Model.CoSoId ? "active" : "")"
+           asp-controller="Cho" asp-action="ChiTiet"
+           asp-route-ngay="@Model.Ngay.ToString("yyyy-MM-dd")" asp-route-coSoId="@cs.Id">@cs.TenCoSo</a>
+    }
+</div>
+
+@if (Model.CoSoId is null)
+{
+    <p class="cho-empty">Chưa có cơ sở nào đang hoạt động trong hệ thống.</p>
+    return;
+}
+
+<div data-cho-mode="page">
+    @await Html.PartialAsync("_NoiDungChiTietCho", Model)
+</div>
+
+@section Scripts {
+    <script src="~/js/cho.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,211 @@
+@model ChiTietChoViewModel
+@* Nội dung chính của bảng kê chợ (thực đơn / tổng quan / mục 2/3/4 / xác nhận) —
+   KHÔNG gồm tab chọn cơ sở, KHÔNG gồm form đổi ngày. Dùng chung cho:
+   - Views/Cho/ChiTiet.cshtml (trang đầy đủ, điều hướng cả trang)
+   - Views/Cho/_ChiTietChoPanel.cshtml (panel nhúng AJAX trong Dashboard) *@
+
+<p><strong>@Model.TenThu, ngày @Model.Ngay.ToString("dd/MM/yyyy")</strong></p>
+
+@if (!Model.CoNgayHoc)
+{
+    <div class="cho-card">
+        <p class="cho-empty">Ngày này chưa có dữ liệu ngày học (chưa soạn thực đơn) cho cơ sở @Model.TenCoSo.
+            Vào <a asp-controller="ThucDon" asp-action="Soan" asp-route-coSoId="@Model.CoSoId" asp-route-ngay="@Model.Ngay.ToString("yyyy-MM-dd")">Soạn thực đơn</a> để tạo trước.</p>
+    </div>
+}
+else
+{
+    <div class="cho-card">
+        <h2>1. Thực đơn trong ngày</h2>
+        <p><strong>Mẫu giáo</strong></p>
+        @if (Model.ThucDonMauGiao.Any())
+        {
+            <div class="cho-menugrid">
+                @foreach (var m in Model.ThucDonMauGiao)
+                {
+                    <div><div class="lbl">@m.TenBua</div><div class="dish">@(m.TenMon ?? "(chưa chọn)")</div></div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="cho-empty">Chưa soạn thực đơn Mẫu giáo cho ngày này.</p>
+        }
+
+        <p style="margin-top:0.9rem"><strong>Nhà trẻ</strong></p>
+        @if (Model.ThucDonNhaTre.Any())
+        {
+            <div class="cho-menugrid">
+                @foreach (var m in Model.ThucDonNhaTre)
+                {
+                    <div><div class="lbl">@m.TenBua</div><div class="dish">@(m.TenMon ?? "(chưa chọn)")</div></div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="cho-empty">Chưa soạn thực đơn Nhà trẻ cho ngày này.</p>
+        }
+    </div>
+}
+
+@if (Model.CoSoId is not null)
+{
+    <div class="cho-editbox" data-ngay="@Model.Ngay.ToString("yyyy-MM-dd")" data-coso="@Model.CoSoId">
+        <div class="lead">✏️ Nhập số suất ăn trong ngày @if (Model.DaTuyChinhSuat) { <span class="changed-tag">Đã sửa</span> }</div>
+        <div class="editgrid">
+            <div class="efield"><label>Ăn sáng</label><input type="number" min="0" step="1" data-field="an-sang" value="@Model.AnSangHienTai" /></div>
+            <div class="efield"><label>Nhà trẻ</label><input type="number" min="0" step="1" data-field="nha-tre" value="@Model.NhaTreHienTai" /></div>
+            <div class="efield"><label>Mẫu giáo</label><input type="number" min="0" step="1" data-field="mau-giao" value="@Model.MauGiaoHienTai" /></div>
+        </div>
+        <div class="editactions">
+            <button type="button" class="btn btn-primary" onclick="choTinhLai(this)">Tính lại</button>
+            <button type="button" class="btn btn-secondary" onclick="choKhoiPhuc(this)">Khôi phục số gốc</button>
+        </div>
+        <div class="note">Khi đổi số suất, số lượng và thành tiền của gia vị (mục 2), thực phẩm sáng (mục 3) và thực phẩm chính + xế (mục 4) bên dưới sẽ tự tính lại theo đúng tỷ lệ định mức của thực đơn Chợ @Model.TenCoSo ngày này — món ăn không đổi, chỉ đổi số lượng nguyên liệu. Số liệu gốc trong phiếu xuất kho không hề bị thay đổi, đây chỉ là xem thử.</div>
+    </div>
+}
+
+<div class="cho-card">
+    <h2>Tổng quan chi tiền chợ</h2>
+    @if (!Model.DinhMuc.Any())
+    {
+        <p class="cho-empty">Chưa nhập định mức ăn ngày (tiền/suất, số suất) cho ngày này ở trang Soạn thực đơn.</p>
+    }
+    else
+    {
+        <div class="cho-chipgrid">
+            <div class="cho-chip gold"><div class="k">Được phép chi (tổng)</div><div class="v">@Model.TongDuocPhepChi.ToString("N0") đ</div></div>
+            <div class="cho-chip"><div class="k">Đã chi thực tế (tổng)</div><div class="v">@Model.TongThucChi.ToString("N0") đ</div></div>
+            <div class="cho-chip @(Model.TongChenhLech < 0 ? "red" : "green")"><div class="k">Chênh lệch</div><div class="v">@Model.TongChenhLech.ToString("N0") đ</div></div>
+        </div>
+        <table class="table cho-table">
+            <thead>
+                <tr><th>Nhóm</th><th>Tiền ăn/cháu</th><th>Số suất</th><th>Được phép chi</th><th>Thực chi</th><th>Chênh lệch</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.DinhMuc)
+                {
+                    <tr>
+                        <td>@d.TenNhom</td>
+                        <td>@d.TienAn1Chau.ToString("N0") đ</td>
+                        <td>@d.SoSuatAn</td>
+                        <td>@d.DuocPhepChi.ToString("N0") đ</td>
+                        <td>@d.ThucChi.ToString("N0") đ</td>
+                        <td class="@(d.ChenhLech < 0 ? "text-danger" : "text-success")">@d.ChenhLech.ToString("N0") đ</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="cho-card">
+    <h2>2. Xuất kho gia vị hằng ngày</h2>
+    @if (!Model.GiaVi.Any())
+    {
+        <p class="cho-empty">Chưa có phiếu xuất kho loại "Gia vị hằng ngày" cho ngày này, và cũng chưa cấu hình <a asp-controller="Kho" asp-action="DinhMucGiaVi">định mức cố định</a> — vào <a asp-controller="Kho" asp-action="XuatKho">Xuất kho</a> để lập phiếu, hoặc vào <a asp-controller="Kho" asp-action="DinhMucGiaVi">Định mức gia vị</a> để tự động áp dụng cho mọi ngày.</p>
+    }
+    else
+    {
+        @if (Model.GiaViTuDinhMuc)
+        {
+            <p class="cho-note">Chưa lập phiếu xuất kho thật cho ngày này — số dưới đây <strong>tự tính theo định mức cố định</strong> (<a asp-controller="Kho" asp-action="DinhMucGiaVi">xem/sửa</a>) × sĩ số ăn ngày này.</p>
+        }
+        <table class="table cho-table">
+            <thead>
+                <tr><th>Thực phẩm</th><th>ĐVT</th><th>SL Ăn sáng</th><th>SL Nhà trẻ</th><th>SL Mẫu giáo</th><th>Đơn giá</th><th>TT Ăn sáng</th><th>TT Nhà trẻ</th><th>TT Mẫu giáo</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.GiaVi)
+                {
+                    <tr>
+                        <td>@r.TenHang</td><td>@r.Dvt</td>
+                        <td>@r.SlAnSang.ToString("N2")</td><td>@r.SlNhaTre.ToString("N2")</td><td>@r.SlMauGiao.ToString("N2")</td>
+                        <td>@r.DonGia.ToString("N0") đ</td>
+                        <td>@r.TtAnSang.ToString("N0") đ</td><td>@r.TtNhaTre.ToString("N0") đ</td><td>@r.TtMauGiao.ToString("N0") đ</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6">Tổng cộng</td>
+                    <td>@Model.GiaVi.Sum(r => r.TtAnSang).ToString("N0") đ</td>
+                    <td>@Model.GiaVi.Sum(r => r.TtNhaTre).ToString("N0") đ</td>
+                    <td>@Model.GiaVi.Sum(r => r.TtMauGiao).ToString("N0") đ</td>
+                </tr>
+            </tfoot>
+        </table>
+    }
+</div>
+
+<div class="cho-card">
+    <h2>3. Chi tiền thực phẩm buổi sáng</h2>
+    @if (!Model.ThucPhamSang.Any())
+    {
+        <p class="cho-empty">Chưa có phiếu xuất kho loại "Thực phẩm sáng" cho ngày này.</p>
+    }
+    else
+    {
+        <table class="table cho-table">
+            <thead><tr><th>Thực phẩm</th><th>ĐVT</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.ThucPhamSang)
+                {
+                    <tr>
+                        <td>@r.TenHang</td><td>@r.Dvt</td>
+                        <td>@r.SoLuong.ToString("N2")</td><td>@r.DonGia.ToString("N0") đ</td><td>@r.ThanhTien.ToString("N0") đ</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot><tr><td colspan="4">Tổng cộng</td><td>@Model.ThucPhamSang.Sum(r => r.ThanhTien).ToString("N0") đ</td></tr></tfoot>
+        </table>
+    }
+</div>
+
+<div class="cho-card">
+    <h2>4. Chi tiền thực phẩm ăn chính + xế</h2>
+    @if (!Model.ThucPhamChinhXe.Any())
+    {
+        <p class="cho-empty">Chưa có phiếu xuất kho loại "Thực phẩm chính + xế" cho ngày này.</p>
+    }
+    else
+    {
+        <table class="table cho-table">
+            <thead>
+                <tr><th>Thực phẩm</th><th>ĐVT</th><th>SL Nhà trẻ</th><th>SL Mẫu giáo</th><th>Đơn giá</th><th>TT Nhà trẻ</th><th>TT Mẫu giáo</th><th>Tổng SL</th><th>Tổng thành tiền</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.ThucPhamChinhXe)
+                {
+                    <tr>
+                        <td>@r.TenHang</td><td>@r.Dvt</td>
+                        <td>@r.SlNhaTre.ToString("N2")</td><td>@r.SlMauGiao.ToString("N2")</td>
+                        <td>@r.DonGia.ToString("N0") đ</td>
+                        <td>@r.TtNhaTre.ToString("N0") đ</td><td>@r.TtMauGiao.ToString("N0") đ</td>
+                        <td>@r.TongSl.ToString("N2")</td><td>@r.TongTt.ToString("N0") đ</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5">Tổng cộng</td>
+                    <td>@Model.ThucPhamChinhXe.Sum(r => r.TtNhaTre).ToString("N0") đ</td>
+                    <td>@Model.ThucPhamChinhXe.Sum(r => r.TtMauGiao).ToString("N0") đ</td>
+                    <td></td>
+                    <td>@Model.ThucPhamChinhXe.Sum(r => r.TongTt).ToString("N0") đ</td>
+                </tr>
+            </tfoot>
+        </table>
+    }
+</div>
+
+<div class="cho-card">
+    <h2>Xác nhận</h2>
+    <div class="cho-signrow">
+        <div><div class="role">Nhà bếp</div><div class="name">@(Model.NguoiLap ?? "—")</div></div>
+        <div><div class="role">Thủ kho</div><div class="name">@(Model.ThuKho ?? "—")</div></div>
+        <div><div class="role">Kế toán</div><div class="name">@(Model.KeToan ?? "—")</div></div>
+        <div><div class="role">Hiệu trưởng</div><div class="name">@(Model.HieuTruong ?? "—")</div></div>
+    </div>
+</div>
