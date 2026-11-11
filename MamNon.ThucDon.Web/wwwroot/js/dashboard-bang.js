@@ -1,6 +1,6 @@
 (function () {
     'use strict';
-    // Bảng thực đơn tuần ở TRANG CHỦ — giao diện giống trang thực đơn cho phụ huynh, CHỈ ĐỂ XEM (không chọn món trên bảng).
+    // Bảng thực đơn tuần ở TRANG CHỦ — giao diện giống trang thực đơn cho phụ huynh. Tài khoản được sửa: bấm ô món (hoặc nút "Sửa món") để đổi món, rồi Lưu nháp / Lưu & công khai.
     // Nguồn dữ liệu = các ô ẩn .dashboard-chon-mon (giữ nguyên cho Lưu nháp / Ngẫu nhiên / Xóa / Xuất Excel); bảng tự vẽ lại mỗi khi chúng đổi.
     // Bấm tiêu đề ngày để mở Chi tiết đúng ngày đó (như cũ).
 
@@ -9,6 +9,8 @@
     var ngayChon = 0;
     var khoiChon = 'nhaTre';
     var data = null;
+    var formLuu = document.getElementById('form-dashboard-luu');
+    var SUA = !!formLuu && formLuu.getAttribute('data-sua') === '1';   // tài khoản được sửa thực đơn
 
     function el(id) { return document.getElementById(id); }
     function esc(s) {
@@ -147,10 +149,12 @@
             h += '<tr><th class="ph-nhan">' + EMOJI_BUA[ma] + '<span>' + esc(TEN_NHOM[ma]) + '</span></th>';
             data.forEach(function (d, i) {
                 var td = ' d' + i + (d.iso === hn ? ' homnay' : '');
+                var suaTd = (SUA && !d.nghi) ? ' data-sua-ngay="' + i + '" data-sua-nhom="' + ma + '" title="Bấm để sửa món"' : '';
+                var suaCls = (SUA && !d.nghi) ? ' sua-duoc' : '';
                 if (d.nghi) { if (r === 0) h += '<td class="ph-nghi' + td + '" rowspan="' + cacBua.length + '">Nghỉ</td>'; return; }
                 var bua = d[kh].filter(function (x) { return x.ma === ma; })[0];
-                if (!bua) h += '<td class="ph-trong' + td + '">–</td>';
-                else h += '<td class="' + td.trim() + '">' + bua.mon.map(dongMon).join('') + '</td>';
+                if (!bua) h += '<td class="ph-trong' + td + suaCls + '"' + suaTd + '>–</td>';
+                else h += '<td class="' + td.trim() + suaCls + '"' + suaTd + '>' + bua.mon.map(dongMon).join('') + '</td>';
             });
             h += '</tr>';
         });
@@ -185,7 +189,12 @@
         box.className = 'ph-the-ngay d' + ngayChon;
         var ten = { nhaTre: 'Nhà trẻ', mauGiao: 'Mẫu giáo', ca: 'Nhà trẻ & Mẫu giáo' }[khoiChon];
         var h = '<div class="ph-the-tieu-de">' + esc(d.thu) + '<small>' + esc(d.ngan) + ' · ' + ten + '</small></div>';
-        h += '<button type="button" class="ph-the-ct" data-mo-ngay-bt="' + d.iso + '">Xem chi tiết ngày này →</button>';
+        if (SUA && !d.nghi) {
+            (khoiChon === 'ca' ? ['nhaTre', 'mauGiao'] : [khoiChon]).forEach(function (k) {
+                h += '<button type="button" class="ph-the-ct" data-sua-ngay-bt="' + ngayChon + '" data-sua-khoi="' + k + '">✏️ Sửa món' + (khoiChon === 'ca' ? (k === 'nhaTre' ? ' Nhà trẻ' : ' Mẫu giáo') : '') + '</button>';
+            });
+        }
+        if (!window.khongMoChiTiet) h += '<button type="button" class="ph-the-ct" data-mo-ngay-bt="' + d.iso + '">Xem chi tiết ngày này →</button>';
         if (khoiChon === 'ca') {
             h += '<div class="ph-2khoi">' +
                 '<section class="ph-khoi-nt"><h2>🍼 Nhà trẻ</h2>' + khoiHtml(d, 'nhaTre') + '</section>' +
@@ -226,6 +235,96 @@
         if (data[ngayChon] && data[ngayChon].nghi) ngayChon = 0;
     }
 
+    // ---- SỬA MÓN trên Trang chủ: hộp thoại liệt kê các bữa của 1 ngày × 1 khối, mỗi bữa 1 ô chọn món gõ tìm được ----
+    function dongBoOChon(slot, v) {
+        slot.value = v ? String(v) : '';
+        slot.setAttribute('data-ten', v ? ((window.DASHBOARD_TEN_MON || {})[String(v)] || '') : '');
+    }
+    function dongSua() { var o = document.querySelector('.ds-overlay'); if (o) o.parentNode.removeChild(o); document.removeEventListener('keydown', escSua); }
+    function escSua(e) { if (e.key === 'Escape' && !document.querySelector('.mon-search-list[style*="block"]')) dongSua(); }
+
+    function moSua(ngay, kh, nhomUuTien) {
+        if (!SUA || !data || !data[ngay] || data[ngay].nghi) return;
+        var slots = Array.prototype.filter.call(document.querySelectorAll('.dashboard-chon-mon'), function (s) {
+            return s.getAttribute('data-khoi') === kh && parseInt(s.getAttribute('data-ngay'), 10) === ngay;
+        });
+        if (!slots.length) { alert('Khối này chưa có bữa ăn nào để sửa.'); return; }
+        dongSua();
+        var d = data[ngay];
+        var dsMon = window.DASHBOARD_DS_MON || [];
+        var h = '<div class="ds-hop" role="dialog" aria-modal="true"><h3>✏️ Sửa món — ' + esc(d.thu) + ' ' + esc(d.ngan) + ' · ' + (kh === 'nhaTre' ? 'Nhà trẻ' : 'Mẫu giáo') + '</h3><div class="ds-luoi">';
+        slots.forEach(function (s, idx) {
+            var nhom = nhomCuaBua(s.getAttribute('data-bua-ten'), kh)[0];
+            h += '<div class="ds-dong' + (nhom === nhomUuTien ? ' uu-tien' : '') + '"><label>' + esc(s.getAttribute('data-bua-ten')) + '</label><select class="form-control" data-idx="' + idx + '"></select></div>';
+        });
+        // Phụ sáng / Phụ chiều: chọn từ Danh mục món ăn (nhóm Phụ sáng / Phụ chiều), dùng chung cho cả 2 khối
+        var spanPhu = document.querySelector('.dashboard-phu[data-ngay="' + ngay + '"]');
+        var kho = document.getElementById('dashboard-du-lieu');
+        var macDinhChieu = kho ? (kho.getAttribute('data-phu-chieu-mac-dinh') || '').trim() : '';
+        var phuHienTai = { sang: '', chieu: '' };
+        if (spanPhu) {
+            phuHienTai.sang = (spanPhu.getAttribute('data-sang') || '').trim();
+            phuHienTai.chieu = spanPhu.getAttribute('data-da-luu') === 'true' ? (spanPhu.getAttribute('data-chieu') || '').trim() : macDinhChieu;
+        }
+        h += '<div class="ds-dong' + (nhomUuTien === 'phusang' ? ' uu-tien' : '') + '"><label>PHỤ SÁNG<small>dùng chung 2 khối</small></label><select class="form-control" data-phu="sang"></select></div>' +
+             '<div class="ds-dong' + (nhomUuTien === 'phuchieu' ? ' uu-tien' : '') + '"><label>PHỤ CHIỀU<small>dùng chung 2 khối</small></label><select class="form-control" data-phu="chieu"></select></div>';
+        h += '</div><p class="ls-ghi-chu">Chọn xong bấm "Áp dụng" — thay đổi chỉ lưu vào hệ thống khi bạn bấm "Lưu nháp cả tuần" hoặc "Lưu &amp; công khai".</p>' +
+            '<div class="ds-nut"><button type="button" class="btn btn-secondary" data-ds="huy">Hủy</button><button type="button" class="btn btn-primary" data-ds="ok">Áp dụng</button></div></div>';
+        var ov = document.createElement('div');
+        ov.className = 'ds-overlay';
+        ov.innerHTML = h;
+        document.body.appendChild(ov);
+
+        var dsPhu = window.DASHBOARD_DS_PHU || { sang: [], chieu: [] };
+        ov.querySelectorAll('select[data-phu]').forEach(function (sel) {
+            var loai = sel.getAttribute('data-phu');
+            var cur = phuHienTai[loai];
+            var ds = (dsPhu[loai] || []).slice();
+            if (cur && ds.indexOf(cur) < 0) ds.push(cur);   // giá trị đang dùng chưa có trong danh mục vẫn giữ được
+            var o = '<option value="">— (để trống) —</option>';
+            ds.forEach(function (t) { o += '<option value="' + esc(t) + '"' + (t === cur ? ' selected' : '') + '>' + esc(t) + '</option>'; });
+            sel.innerHTML = o;
+            if (window.MamNonSearch && window.MamNonSearch.enhance) window.MamNonSearch.enhance(sel);
+        });
+        ov.querySelectorAll('select[data-idx]').forEach(function (sel) {
+            var s = slots[parseInt(sel.getAttribute('data-idx'), 10)];
+            var nhomId = s.getAttribute('data-nhom');
+            var cur = s.value;
+            var ds = dsMon.filter(function (m) { return !nhomId || String(m.nhom) === nhomId || String(m.id) === cur; });
+            if (ds.filter(function (m) { return String(m.id) !== cur; }).length === 0) ds = dsMon;   // nhóm chưa có món nào -> cho chọn tất cả
+            var o = '<option value="">— (để trống) —</option>';
+            ds.forEach(function (m) { o += '<option value="' + m.id + '"' + (String(m.id) === cur ? ' selected' : '') + '>' + esc(m.ten) + '</option>'; });
+            sel.innerHTML = o;
+            if (window.MamNonSearch && window.MamNonSearch.enhance) window.MamNonSearch.enhance(sel);
+        });
+
+        ov.addEventListener('click', function (e) {
+            if (e.target === ov || e.target.getAttribute('data-ds') === 'huy') { dongSua(); return; }
+            if (e.target.getAttribute('data-ds') === 'ok') {
+                var doi = false;
+                ov.querySelectorAll('select[data-idx]').forEach(function (sel) {
+                    var s = slots[parseInt(sel.getAttribute('data-idx'), 10)];
+                    if (s.value !== sel.value) { dongBoOChon(s, sel.value); doi = true; }
+                });
+                var selSang = ov.querySelector('select[data-phu="sang"]'), selChieu = ov.querySelector('select[data-phu="chieu"]');
+                if (spanPhu && selSang && selChieu && (selSang.value !== phuHienTai.sang || selChieu.value !== phuHienTai.chieu)) {
+                    // ghi CẢ HAI giá trị + đánh dấu đã lưu: tránh phụ chiều mặc định bị mất khi chỉ đổi phụ sáng
+                    spanPhu.setAttribute('data-sang', selSang.value);
+                    spanPhu.setAttribute('data-chieu', selChieu.value);
+                    spanPhu.setAttribute('data-da-luu', 'true');
+                    spanPhu.setAttribute('data-sua-phu', '1');
+                    doi = true;
+                }
+                dongSua();
+                if (doi) {
+                    var tb = document.getElementById('dash-chua-luu'); if (tb) tb.hidden = false;
+                    ve();
+                }
+            }
+        });
+        document.addEventListener('keydown', escSua);
+    }
+
     // ---- sự kiện ----
     el('ph-chon-ngay').addEventListener('click', function (e) {
         var b = e.target.closest('.ph-chip'); if (!b) return;
@@ -238,6 +337,10 @@
         ve();
     });
     goc.addEventListener('click', function (e) {
+        var o = e.target.closest('td.sua-duoc');
+        if (o) { moSua(parseInt(o.getAttribute('data-sua-ngay'), 10), (khoiChon === 'nhaTre' ? 'nhaTre' : 'mauGiao'), o.getAttribute('data-sua-nhom')); return; }
+        var nut = e.target.closest('[data-sua-ngay-bt]');
+        if (nut) { moSua(parseInt(nut.getAttribute('data-sua-ngay-bt'), 10), nut.getAttribute('data-sua-khoi'), null); return; }
         var t = e.target.closest('[data-mo-ngay-bt]'); if (!t) return;
         if (typeof window.dashboardMoChiTiet === 'function') window.dashboardMoChiTiet(t.getAttribute('data-mo-ngay-bt'));
     });

@@ -24,14 +24,60 @@
         return luoi;
     }
 
+    // Phụ sáng / Phụ chiều đã sửa trên Trang chủ (chỉ các ngày có data-sua-phu="1"): { ngay: { sang, chieu } }
+    function layPhuHienTai() {
+        var kq = {};
+        document.querySelectorAll('.dashboard-phu[data-sua-phu="1"]').forEach(function (s) {
+            kq[s.getAttribute('data-ngay')] = { sang: s.getAttribute('data-sang') || '', chieu: s.getAttribute('data-chieu') || '' };
+        });
+        return kq;
+    }
+
     function dashboardLuu(guiDuyet) {
         document.getElementById('hiddenLuoiJson').value = JSON.stringify(layLuoiHienTai());
+        document.getElementById('hiddenPhuJson').value = JSON.stringify(layPhuHienTai());
         document.getElementById('hiddenGuiDuyet').value = guiDuyet ? 'true' : 'false';
         document.getElementById('hiddenXuatExcel').value = 'false';
         document.getElementById('hiddenMoChiTietNgay').value = '';
+        document.getElementById('hiddenCongKhai').value = 'false';
+        document.getElementById('hiddenCacNgay').value = '';
         document.getElementById('form-dashboard-luu').submit();
     }
     window.dashboardLuu = dashboardLuu;
+
+    // Lưu món + công khai ngay: cả tuần, hoặc chỉ các ngày được tick (T2..T7).
+    function dashboardLuuCongKhai() {
+        var theoNgay = document.querySelector('input[name="phamViCongKhai"]:checked').value === 'ngay';
+        var ngay = [];
+        var cauHoi = 'Lưu món và công khai CẢ TUẦN cho phụ huynh?';
+        if (theoNgay) {
+            // "Đến hết ngày X": phụ huynh thấy Thứ 2 → X; các ngày sau X chưa hiện.
+            var sel = document.getElementById('ck-den-ngay');
+            var k = parseInt(sel.value, 10);
+            for (var i = 0; i <= k; i++) ngay.push(i);
+            cauHoi = 'Lưu món và công khai từ Thứ 2 đến hết ' + sel.options[sel.selectedIndex].text +
+                '?\nPhụ huynh chỉ thấy các ngày này; các ngày sau đó sẽ chưa hiện.';
+        }
+        if (!confirm(cauHoi)) return;
+        document.getElementById('hiddenLuoiJson').value = JSON.stringify(layLuoiHienTai());
+        document.getElementById('hiddenPhuJson').value = JSON.stringify(layPhuHienTai());
+        document.getElementById('hiddenGuiDuyet').value = 'false';
+        document.getElementById('hiddenXuatExcel').value = 'false';
+        document.getElementById('hiddenMoChiTietNgay').value = '';
+        document.getElementById('hiddenCongKhai').value = 'true';
+        document.getElementById('hiddenCacNgay').value = ngay.join(',');
+        document.getElementById('form-dashboard-luu').submit();
+    }
+    window.dashboardLuuCongKhai = dashboardLuuCongKhai;
+    document.addEventListener('DOMContentLoaded', function () {
+        var vung = document.getElementById('ck-chon-ngay');
+        document.querySelectorAll('input[name="phamViCongKhai"]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                var ngay = document.querySelector('input[name="phamViCongKhai"]:checked').value === 'ngay';
+                if (vung) vung.style.display = ngay ? 'inline-flex' : 'none';
+            });
+        });
+    });
 
     // Trang chủ chỉ XEM: mỗi ô là 1 ô ẩn giữ id món (value) + tên món (data-ten) — bảng phía trên vẽ lại từ đây.
     function datOChon(sel, giaTri) {
@@ -119,18 +165,25 @@
         if (btnExcel) btnExcel.addEventListener('click', function () {
             // Lưu lưới đang hiện rồi tải Excel (cùng cách xuất với trang Lịch sử).
             document.getElementById('hiddenLuoiJson').value = JSON.stringify(layLuoiHienTai());
+        document.getElementById('hiddenPhuJson').value = JSON.stringify(layPhuHienTai());
             document.getElementById('hiddenGuiDuyet').value = 'false';
             document.getElementById('hiddenXuatExcel').value = 'true';
+            document.getElementById('hiddenCongKhai').value = 'false';
+            document.getElementById('hiddenCacNgay').value = '';
             document.getElementById('hiddenMoChiTietNgay').value = '';
             window.xuatExcelAjax(document.getElementById('form-dashboard-luu'));
         });
         function moChiTiet(ngay) {
+            if (window.khongMoChiTiet) return;   // vai trò Quản lý: không có quyền vào Chi tiết - Chi tiền chợ
             // Tài khoản chỉ xem không có quyền Lưu -> đi thẳng sang Chi tiết, không submit.
             if (document.getElementById('form-dashboard-luu').getAttribute('data-sua') !== '1') { window.location.href = '/chi-tiet-ngay?ngay=' + ngay; return; }
             document.getElementById('hiddenLuoiJson').value = JSON.stringify(layLuoiHienTai());
+        document.getElementById('hiddenPhuJson').value = JSON.stringify(layPhuHienTai());
             document.getElementById('hiddenGuiDuyet').value = 'false';
             document.getElementById('hiddenXuatExcel').value = 'false';
             document.getElementById('hiddenMoChiTietNgay').value = ngay;
+            document.getElementById('hiddenCongKhai').value = 'false';
+            document.getElementById('hiddenCacNgay').value = '';
             document.getElementById('form-dashboard-luu').submit();
         }
         window.dashboardMoChiTiet = moChiTiet;   // bảng tuần (dashboard-bang.js): bấm tiêu đề ngày -> mở Chi tiết ngày đó
