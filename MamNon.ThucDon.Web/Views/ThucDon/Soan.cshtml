@@ -1,0 +1,120 @@
+@model SoanThucDonViewModel
+@{
+    ViewData["Title"] = "Soạn thực đơn";
+}
+
+<h1>Soạn thực đơn</h1>
+
+<form id="form-soan" asp-controller="ThucDon" asp-action="LuuThucDon" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="MonDaChonJson" id="MonDaChonJson" value="{}" />
+    <input type="hidden" name="GuiDuyet" id="GuiDuyet" value="false" />
+
+    <div class="soan-thucdon-header">
+        <div class="form-group">
+            <label>Cơ sở</label>
+            <select id="coSoId" name="CoSoId" class="form-control">
+                <option value="">-- Chọn cơ sở --</option>
+                @foreach (var cs in Model.DsCoSo)
+                {
+                    <option value="@cs.Id" selected="@(cs.Id == Model.CoSoId)">@cs.TenCoSo</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Khối</label>
+            <select id="khoiId" name="KhoiId" class="form-control">
+                <option value="">-- Chọn khối --</option>
+                @foreach (var k in Model.DsKhoi)
+                {
+                    <option value="@k.Id" selected="@(k.Id == Model.KhoiId)">@k.TenKhoi</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Nhóm chi phí</label>
+            <select id="nhomChiPhiId" name="NhomChiPhiId" class="form-control">
+                <option value="">-- Chọn nhóm --</option>
+                @foreach (var n in Model.DsNhomChiPhi)
+                {
+                    <option value="@n.Id" selected="@(n.Id == Model.NhomChiPhiId)">@n.TenNhom</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Ngày</label>
+            <input type="date" id="ngay" name="Ngay" class="form-control" value="@Model.Ngay.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="form-group">
+            <label>Số cháu (suất ăn)</label>
+            <input type="number" min="0" id="soSuatAn" name="SoSuatAn" class="form-control" value="@Model.SoSuatAn" />
+        </div>
+
+        <div class="form-group">
+            <label>Tiền ăn 1 cháu (đồng/suất)</label>
+            <input type="number" min="0" id="tienAn1Chau" name="TienAn1Chau" class="form-control" value="@Model.TienAn1Chau" />
+        </div>
+    </div>
+
+    <h2>Chọn món cho từng bữa</h2>
+    <button type="button" class="btn btn-secondary" id="btn-ngau-nhien">🎲 Chọn ngẫu nhiên</button>
+    <table class="table" id="bang-bua">
+        <thead><tr><th>Bữa</th><th>Món ăn</th></tr></thead>
+        <tbody id="bang-bua-body">
+            @foreach (var bua in Model.DsBuaTheoKhoi)
+            {
+                var monId = Model.MonDaChonTheoBua.TryGetValue(bua.Id, out var m) ? m : null;
+                <tr data-bua-id="@bua.Id" data-nhom-bua-an-id="@bua.NhomBuaAnId">
+                    <td>@bua.TenBua</td>
+                    <td>
+                        <select class="form-control chon-mon" data-bua-id="@bua.Id" data-nhom-bua-an-id="@bua.NhomBuaAnId">
+                            <option value="">-- Chưa chọn --</option>
+                            @* Chỉ hiện món CÙNG NHÓM BỮA với dòng này (VD dòng "CANH" chỉ hiện món nhóm "Canh"),
+                               tránh chọn nhầm món trái bữa (VD "Nước cam" vào bữa "MẶN"). *@
+                            @foreach (var mon in Model.DsMonAn.Where(mon => mon.NhomBuaAnId == bua.NhomBuaAnId))
+                            {
+                                <option value="@mon.Id" selected="@(mon.Id == monId)">@mon.TenMon</option>
+                            }
+                        </select>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>Nhu cầu nguyên liệu (dự kiến)</h2>
+    <table class="table" id="bang-nguyen-lieu">
+        <thead><tr><th>Nguyên liệu</th><th>ĐVT</th><th>Số lượng cần</th><th>Thành tiền</th></tr></thead>
+        <tbody id="bang-nguyen-lieu-body"></tbody>
+        <tfoot>
+            <tr><td colspan="3"><strong>Tổng tiền dự kiến</strong></td><td id="tong-tien-nguyen-lieu"><strong>0đ</strong></td></tr>
+        </tfoot>
+    </table>
+
+    <h2>Đối chiếu định mức theo hạng mục</h2>
+    <table class="table" id="bang-hang-muc">
+        <thead><tr><th>Hạng mục</th><th>Chi phí thực tế/suất</th><th>Định mức/suất</th><th>Chênh lệch/suất</th></tr></thead>
+        <tbody id="bang-hang-muc-body"></tbody>
+    </table>
+
+    <h2>Tổng quan ngân sách ngày</h2>
+    <div id="tong-quan-ngan-sach"><em>Nhập đủ Nhóm chi phí + Tiền ăn 1 cháu để xem đối chiếu.</em></div>
+
+    <div class="soan-thucdon-actions">
+        <button type="button" class="btn btn-secondary" onclick="submitForm(false)">Lưu nháp</button>
+        <button type="button" class="btn btn-primary" onclick="submitForm(true)">Gửi duyệt</button>
+        <a class="btn btn-secondary" id="link-xuat-excel" href="#">Xuất Excel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        window.__monAnList = @Html.Raw(Json.Serialize(Model.DsMonAn.Select(m => new { id = m.Id, tenMon = m.TenMon, nhomBuaAnId = m.NhomBuaAnId })));
+        window.__monDaChonBanDau = @Html.Raw(Json.Serialize(Model.MonDaChonTheoBua));
+    </script>
+    <script src="~/js/soan-thuc-don.js" asp-append-version="true"></script>
+}
