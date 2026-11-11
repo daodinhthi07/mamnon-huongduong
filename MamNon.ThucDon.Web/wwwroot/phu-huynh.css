@@ -1,0 +1,101 @@
+/* Trang công khai thực đơn cho phụ huynh — vui tươi, hiện đại. Màu riêng từng ngày (T2…T7). */
+:root{
+  --nen:#fff8ec; --the:#ffffff; --chu:#3a2e2a; --chu-nhat:#8a7a70; --vien:#f3e4cf;
+  --t2:#ff7b7b; --t2n:#ffe9e9;
+  --t3:#ffa63d; --t3n:#fff1de;
+  --t4:#5ec27a; --t4n:#e6f7ec;
+  --t5:#3fb6c6; --t5n:#e1f5f8;
+  --t6:#6b8cff; --t6n:#e7edff;
+  --t7:#b07cf0; --t7n:#f1e8fd;
+  --nha-tre:#ff8fb1; --mau-giao:#4fb36d;
+  --bong:0 2px 4px rgba(90,60,30,.06), 0 8px 24px rgba(90,60,30,.08);
+}
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html{ -webkit-text-size-adjust:100%; }
+body{ margin:0; background:var(--nen); color:var(--chu); font-family:'Be Vietnam Pro','Segoe UI',system-ui,sans-serif; line-height:1.45; }
+#ph-app{ max-width:1280px; margin:0 auto; padding:0 16px 24px; }
+
+.d0{ --mau:var(--t2); --nhat:var(--t2n); } .d1{ --mau:var(--t3); --nhat:var(--t3n); }
+.d2{ --mau:var(--t4); --nhat:var(--t4n); } .d3{ --mau:var(--t5); --nhat:var(--t5n); }
+.d4{ --mau:var(--t6); --nhat:var(--t6n); } .d5{ --mau:var(--t7); --nhat:var(--t7n); }
+
+/* ---------- Đầu trang ---------- */
+.ph-dau{ text-align:center; padding:22px 8px 10px; }
+.ph-truong{ font-weight:700; letter-spacing:.06em; font-size:clamp(13px,3.4vw,16px); color:#c46a00; }
+.ph-tieu-de{ font-family:'Fraunces',serif; font-weight:700; font-size:clamp(28px,8vw,48px); margin:4px 0 2px; letter-spacing:.02em;
+  background:linear-gradient(90deg,var(--t2),var(--t3) 30%,var(--t4) 55%,var(--t5) 75%,var(--t7)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.ph-tuan{ font-size:clamp(17px,4.6vw,22px); font-weight:700; }
+.ph-khoang{ color:var(--chu-nhat); font-size:14px; margin-bottom:10px; }
+.ph-banner{ display:inline-block; background:#fff3cd; border:1px solid #f1d27a; color:#7a5a00; border-radius:999px; padding:4px 14px; font-weight:700; font-size:13px; margin:4px 0 8px; }
+.ph-dieu-huong{ display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:6px; }
+.ph-nut{ border:1px solid var(--vien); background:var(--the); color:var(--chu); border-radius:999px; padding:9px 16px; font:inherit; font-weight:600; font-size:14px; cursor:pointer; box-shadow:var(--bong); }
+.ph-nut:disabled{ opacity:.4; cursor:default; }
+.ph-nut-chia-se{ background:#ffe3a8; border-color:#f4c765; }
+.ph-thong-bao{ text-align:center; background:var(--the); border-radius:16px; padding:28px 16px; box-shadow:var(--bong); font-weight:600; }
+
+/* ---------- Máy tính: bảng nguyên tuần (1 khối) ---------- */
+.ph-may-tinh{ display:block; overflow-x:auto; }
+.ph-dien-thoai{ display:none; }
+.ph-bang{ width:100%; border-collapse:separate; border-spacing:0; background:var(--the); border-radius:18px; box-shadow:var(--bong); overflow:hidden; table-layout:fixed; }
+.ph-bang th, .ph-bang td{ border-bottom:1px solid var(--vien); border-right:1px solid var(--vien); padding:12px 12px; vertical-align:top; font-size:16px; }
+.ph-bang tr > *:last-child{ border-right:0; }
+.ph-bang tbody tr:last-child > *{ border-bottom:0; }
+.ph-bang thead th.ph-ngay-dau{ background:var(--mau); color:#fff; text-align:center; font-size:18px; font-weight:800; padding:14px 6px; }
+.ph-bang thead th.ph-ngay-dau small{ display:block; font-weight:600; opacity:.95; font-size:13.5px; margin-top:2px; }
+.ph-bang thead th.ph-ngay-dau.homnay{ box-shadow:inset 0 -5px 0 #fff3; }
+.ph-bang th.ph-nhan{ width:92px; background:#fff1d6; text-align:center; vertical-align:middle; font-size:12.5px; font-weight:800; color:#b36200; letter-spacing:.03em; }
+.ph-bang th.ph-nhan span{ display:block; margin-top:4px; }
+.ph-bang td{ background:var(--nhat); }
+.ph-bang td.homnay{ box-shadow:inset 0 0 0 3px var(--mau); }
+.ph-bang td.ph-trong{ background:#fafafa; color:#c4b8ae; text-align:center; vertical-align:middle; }
+.ph-bang td.ph-nghi{ background:#f2f0ee; color:var(--chu-nhat); text-align:center; font-weight:700; vertical-align:middle; }
+.ph-mon{ display:flex; gap:8px; align-items:flex-start; margin:0 0 9px; font-weight:600; }
+.ph-mon:last-child{ margin-bottom:0; }
+.ph-mon .e{ flex:0 0 auto; font-size:22px; line-height:1.15; }
+.ph-mon .l{ display:block; font-size:11px; font-weight:700; color:var(--chu-nhat); text-transform:uppercase; letter-spacing:.04em; }
+
+/* Chế độ "Cả hai khối": hiện từng ngày, 2 khối cạnh nhau (máy tính) hoặc xếp chồng (điện thoại) */
+.ph-ca .ph-may-tinh{ display:none; }
+.ph-ca .ph-dien-thoai{ display:block; }
+.ph-ca .ph-chon-ngay{ max-width:760px; margin-left:auto; margin-right:auto; }
+.ph-2khoi{ display:grid; grid-template-columns:1fr 1fr; gap:0; }
+.ph-2khoi section{ padding-bottom:6px; }
+.ph-2khoi h2{ margin:10px 12px 0; padding:9px 14px; border-radius:12px; font-size:16px; font-weight:800; color:#fff; }
+.ph-khoi-nt h2{ background:var(--nha-tre); } .ph-khoi-mg h2{ background:var(--mau-giao); }
+.ph-khoi-mg{ border-left:1px dashed var(--vien); }
+@media (max-width: 699px){ .ph-2khoi{ grid-template-columns:1fr; } .ph-khoi-mg{ border-left:0; border-top:1px dashed var(--vien); margin-top:8px; } }
+
+/* ---------- Điện thoại: từng ngày ---------- */
+.ph-chon-ngay{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin:6px 0 12px; }
+.ph-chip{ border:2px solid transparent; background:var(--nhat); color:var(--chu); border-radius:14px; padding:8px 0 7px; font:inherit; text-align:center; cursor:pointer; line-height:1.2; position:relative; }
+.ph-chip b{ display:block; font-size:15px; }
+.ph-chip small{ font-size:11px; color:var(--chu-nhat); }
+.ph-chip.chon{ background:var(--mau); color:#fff; box-shadow:var(--bong); }
+.ph-chip.chon small{ color:#fff; }
+.ph-chip.homnay::after{ content:"Hôm nay"; position:absolute; left:50%; top:-8px; transform:translateX(-50%); background:#2f9e5a; color:#fff; font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:999px; white-space:nowrap; }
+.ph-chon-khoi{ display:flex; background:#ffe9c4; border-radius:999px; padding:4px; margin:6px auto 14px; max-width:560px; }
+.ph-chon-khoi button{ flex:1; border:0; background:transparent; font:inherit; font-weight:700; font-size:15px; padding:11px 0; border-radius:999px; cursor:pointer; color:#8a5a14; }
+.ph-chon-khoi button.chon{ background:#fff; color:var(--chu); box-shadow:var(--bong); }
+.ph-the-ngay{ background:var(--the); border-radius:20px; box-shadow:var(--bong); overflow:hidden; border-top:6px solid var(--mau); }
+.ph-the-tieu-de{ padding:14px 16px 4px; font-family:'Fraunces',serif; font-weight:700; font-size:22px; }
+.ph-the-tieu-de small{ font-family:'Be Vietnam Pro',sans-serif; font-weight:500; color:var(--chu-nhat); font-size:14px; margin-left:6px; }
+.ph-the-bua{ padding:12px 16px 14px; border-top:1px dashed var(--vien); }
+.ph-the-bua:first-of-type{ border-top:0; }
+.ph-the-bua h3{ margin:0 0 8px; font-size:12.5px; letter-spacing:.06em; color:var(--mau); font-weight:800; }
+.ph-the-bua .ph-mon{ background:var(--nhat); border-radius:12px; padding:9px 11px; margin:0 0 7px; font-size:16.5px; align-items:center; }
+.ph-the-bua .ph-mon .e{ font-size:24px; }
+.ph-the-trong{ padding:26px 16px; text-align:center; color:var(--chu-nhat); font-weight:600; }
+
+.ph-chan{ text-align:center; margin-top:22px; font-weight:600; color:#c46a00; }
+.ph-cap-nhat{ color:var(--chu-nhat); font-size:12.5px; font-weight:400; margin-top:4px; }
+
+@media (max-width: 899px){
+  .ph-may-tinh{ display:none; }
+  .ph-dien-thoai{ display:block; }
+  #ph-app{ padding:0 12px 24px; }
+}
+@media print{
+  .ph-dieu-huong, .ph-dien-thoai{ display:none !important; }
+  .ph-may-tinh{ display:block !important; }
+}

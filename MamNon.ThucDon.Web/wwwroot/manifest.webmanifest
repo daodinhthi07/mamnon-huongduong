@@ -1,0 +1,10 @@
+{
+  "name": "Thực đơn cho trẻ",
+  "short_name": "Thực đơn",
+  "start_url": "/thuc-don-phu-huynh",
+  "scope": "/thuc-don-phu-huynh",
+  "display": "standalone",
+  "background_color": "#fff8ec",
+  "theme_color": "#ffb84d",
+  "lang": "vi"
+}
