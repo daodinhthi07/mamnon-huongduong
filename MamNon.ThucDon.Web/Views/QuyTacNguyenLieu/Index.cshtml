@@ -1,0 +1,67 @@
+@model QuyTacIndexVm
+@{
+    ViewData["Title"] = "Quy tắc nguyên liệu cố định";
+    string Sl(decimal v) => v.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<h1>Quy tắc nguyên liệu cố định</h1>
+<p>
+    Mặt hàng có số lượng <strong>cố định</strong> (không tính theo công thức món). Thêm / sửa / xóa ở đây là có hiệu lực ngay
+    khi xem hoặc xuất Excel — <strong>không cần sửa code</strong>. Khi nhiều quy tắc cùng khớp, quy tắc cụ thể hơn
+    (có chọn cơ sở, có chọn Thứ 2–6 / Thứ 7) được ưu tiên.
+</p>
+
+@if (TempData["ThongBao"] is string tb)
+{
+    <div class="alert-success">@tb</div>
+}
+
+@foreach (var nhom in new[] { (Tieu: "A. Gia vị xuất MỖI NGÀY (mục 2 — Theo dõi xuất kho gia vị hằng ngày)", Ds: Model.MoiNgay, CheDo: 0),
+                              (Tieu: "B. Cố định KHI CÓ TRONG THỰC ĐƠN (mục 3 sáng / mục 4 nhà trẻ + mẫu giáo)", Ds: Model.KhiCo, CheDo: 1) })
+{
+    <h2>@nhom.Tieu</h2>
+    <p><a class="btn primary" asp-action="Them" asp-route-cheDo="@nhom.CheDo">+ Thêm quy tắc</a></p>
+    <div class="tablewrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Mặt hàng</th><th>ĐVT</th><th>Cơ sở</th><th>Ngày</th>
+                    <th>Ăn sáng</th><th>Nhà trẻ</th><th>Mẫu giáo</th><th>Ghi chú</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in nhom.Ds)
+                {
+                    <tr style="@(r.IsActive ? "" : "opacity:.5")">
+                        <td>@r.TenHang</td><td>@r.Dvt</td><td>@r.CoSo</td><td>@r.LoaiNgay</td>
+                        @if (r.KhongDung)
+                        {
+                            <td colspan="3"><em>Không dùng ở cơ sở này</em></td>
+                        }
+                        else
+                        {
+                            <td>@Sl(r.SlAnSang)</td><td>@Sl(r.SlNhaTre)</td><td>@Sl(r.SlMauGiao)</td>
+                        }
+                        <td>@r.GhiChu@(r.IsActive ? "" : " (tạm tắt)")</td>
+                        <td style="white-space:nowrap">
+                            <a asp-action="Sua" asp-route-id="@r.Id">Sửa</a>
+                            <form asp-action="Xoa" asp-route-id="@r.Id" method="post" style="display:inline"
+                                  onsubmit="return confirm('Xóa quy tắc của &quot;@(r.TenHang.Replace("'", ""))&quot;?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn-link btn-link-danger">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (nhom.Ds.Count == 0)
+                {
+                    <tr><td colspan="9"><em>Chưa có quy tắc nào.</em></td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<p class="ls-ghi-chu">
+    Các quy tắc phức tạp hơn (gạo theo số suất, mì tôm theo số trẻ, chuối theo số suất, món Cháo, món Súp, hành tím…) vẫn nằm trong code.
+</p>

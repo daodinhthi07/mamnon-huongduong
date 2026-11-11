@@ -1,0 +1,75 @@
+@model QuyTacFormVm
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Sửa quy tắc nguyên liệu" : "Thêm quy tắc nguyên liệu";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<form asp-action="Luu" method="post" class="qt-form" style="max-width:720px">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="form-group">
+        <label>Mặt hàng</label>
+        <select name="HangHoaId" class="form-control" data-tim-mon>
+            <option value="">-- chọn mặt hàng --</option>
+            @foreach (var h in Model.DsHangHoa)
+            {
+                <option value="@h.Id" selected="@(h.Id == Model.HangHoaId)">@h.TenHang (@h.Dvt?.TenDvt)</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Chế độ</label>
+        <select name="CheDo" class="form-control">
+            <option value="0" selected="@(Model.CheDo == 0)">Xuất MỖI NGÀY ở mục 2 (gia vị hằng ngày)</option>
+            <option value="1" selected="@(Model.CheDo == 1)">Chỉ KHI CÓ món dùng mặt hàng này trong thực đơn (mục 3 / mục 4)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Cơ sở áp dụng <small>(không tick cơ sở nào = áp dụng mọi cơ sở)</small></label>
+        <div>
+            @foreach (var c in Model.DsCoSo)
+            {
+                <label style="margin-right:16px"><input type="checkbox" name="CoSoChon" value="@c.MaCoSo" checked="@Model.CoSoChon.Contains(c.MaCoSo)" /> @c.MaCoSo</label>
+            }
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Ngày áp dụng</label>
+        <select name="LoaiNgay" class="form-control">
+            <option value="0" selected="@(Model.LoaiNgay == 0)">Mọi ngày</option>
+            <option value="1" selected="@(Model.LoaiNgay == 1)">Thứ 2 – Thứ 6</option>
+            <option value="2" selected="@(Model.LoaiNgay == 2)">Thứ 7</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label><input type="checkbox" name="KhongDung" value="true" checked="@Model.KhongDung" /> Mặt hàng này <strong>KHÔNG dùng</strong> ở các cơ sở đã chọn (bỏ dòng)</label>
+        <input type="hidden" name="KhongDung" value="false" />
+    </div>
+
+    <div class="siso-grid">
+        <div><label>Số lượng — Ăn sáng</label><input type="number" step="any" min="0" class="form-control" name="SlAnSang" value="@Model.SlAnSang.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+        <div><label>Số lượng — Nhà trẻ</label><input type="number" step="any" min="0" class="form-control" name="SlNhaTre" value="@Model.SlNhaTre.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+        <div><label>Số lượng — Mẫu giáo</label><input type="number" step="any" min="0" class="form-control" name="SlMauGiao" value="@Model.SlMauGiao.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+    </div>
+    <p class="ls-ghi-chu">Số lượng theo đơn vị của mặt hàng (kg, chai, gói…), là số CẢ NGÀY của từng cột, không nhân số suất.</p>
+
+    <div class="form-group">
+        <label>Ghi chú</label>
+        <input type="text" name="GhiChu" class="form-control" value="@Model.GhiChu" />
+    </div>
+
+    <div class="form-group">
+        <label><input type="checkbox" name="IsActive" value="true" checked="@Model.IsActive" /> Đang áp dụng</label>
+        <input type="hidden" name="IsActive" value="false" />
+    </div>
+
+    <button type="submit" class="btn primary">Lưu</button>
+    <a class="btn secondary" asp-action="Index">Hủy</a>
+</form>
