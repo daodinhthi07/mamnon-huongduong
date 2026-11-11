@@ -1,0 +1,133 @@
+@model List<BangGiaRowVm>
+@{
+    ViewData["Title"] = "Bảng giá";
+    var tuKhoa = ViewData["TuKhoa"] as string ?? string.Empty;
+    var loai = ViewData["Loai"] as string ?? string.Empty;
+    var hienAn = ViewData["HienAn"] is bool b && b;
+    var tongSo = ViewData["TongSo"] is int t ? t : Model.Count;
+    var coQuyenSua = ViewData["CoQuyenSua"] is bool c && c;
+    var dsDvt = ViewData["DsDvt"] as List<string> ?? new List<string>();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+
+<h1>Bảng giá hàng hóa</h1>
+<p>Giá ở đây là giá đang dùng để tính tiền chợ trong <strong>Chi tiết ngày</strong> và file Excel xuất ra. Đổi giá chỉ ảnh hưởng các lần tính/xuất sau; phiếu kho đã lưu giữ nguyên giá lúc lập phiếu.
+@if (coQuyenSua)
+{
+    <br /><span>Muốn sửa <strong>Tên hàng, ĐVT, Giá, Ghi chú</strong> thì bấm <strong>Chi tiết</strong> ở dòng đó.</span>
+}
+</p>
+@if (!coQuyenSua)
+{
+    <p><strong>Tài khoản hiện tại có thể xem và upload bảng giá.</strong> Muốn sửa hoặc thêm mặt hàng thì cần có một trong các vai trò: Nhà bếp, Thủ kho, Kế toán, Hiệu trưởng, Quản trị.</p>
+}
+
+<form method="get" asp-controller="BangGia" asp-action="Index" class="ma-tim" id="bg-form-tim">
+    <div class="form-group">
+        <label for="bg-q">Tìm mặt hàng (tên hoặc mã, không cần dấu)</label>
+        <input type="search" id="bg-q" name="q" class="form-control" value="@tuKhoa" placeholder="VD: thit vai, ca rot, dau me..." autocomplete="off" autofocus />
+    </div>
+    <div class="form-group">
+        <label for="bg-loai">Loại hàng</label>
+        <select id="bg-loai" name="loai" class="form-control">
+            <option value="" selected="@(loai == "")">Tất cả</option>
+            <option value="Thực phẩm tươi" selected="@(loai == "Thực phẩm tươi")">Thực phẩm tươi</option>
+            <option value="Gia vị" selected="@(loai == "Gia vị")">Gia vị</option>
+            <option value="Khác" selected="@(loai == "Khác")">Khác</option>
+        </select>
+    </div>
+    <div class="form-group ma-tim-check">
+        <label><input type="checkbox" name="hienAn" value="true" checked="@hienAn" /> Hiện cả mặt hàng đã ngưng dùng</label>
+    </div>
+    <button type="submit" class="btn btn-secondary">Tìm</button>
+    @if (coQuyenSua)
+    {
+        <a class="btn btn-primary" asp-controller="BangGia" asp-action="Create">+ Thêm mặt hàng</a>
+    }
+    <a class="btn btn-secondary" asp-controller="BangGia" asp-action="TaiXuong" data-xuat-excel-url data-ten-file="bang-gia.xlsx">Tải xuống bảng giá (Excel)</a>
+</form>
+
+<form method="post" asp-controller="BangGia" asp-action="Upload" enctype="multipart/form-data" id="bg-form-upload" style="margin:12px 0">
+        @Html.AntiForgeryToken()
+        <input type="file" name="file" id="bg-file" accept=".xlsx" style="display:none" />
+        <button type="button" class="btn btn-primary" id="bg-btn-upload">Upload file bảng giá (Excel)</button>
+        <span style="margin-left:8px">Upload sẽ <strong>xóa toàn bộ bảng giá cũ</strong> và lấy dữ liệu (tên hàng, ĐVT, giá, ghi chú) từ file mới.</span>
+        @if (coQuyenSua)
+        {
+            <a asp-controller="BangGia" asp-action="NhapExcel" style="margin-left:8px">Upload có xem trước</a>
+        }
+</form>
+
+<p class="ma-dem">Đang hiện <strong id="bg-dem">@Model.Count</strong> / @tongSo mặt hàng<span id="bg-khong" style="display:none"> — không có mặt hàng nào khớp.</span></p>
+
+<div class="tablewrap">
+<table class="table" id="bg-bang">
+    <colgroup>
+        <col style="width:32%" /><col style="width:90px" /><col style="width:130px" /><col />
+        @if (coQuyenSua) { <col style="width:110px" /> }
+    </colgroup>
+    <thead>
+        <tr><th>Tên hàng</th><th>ĐVT</th><th style="text-align:right">Giá (đ)</th><th>Ghi chú</th>@if (coQuyenSua){<th></th>}</tr>
+    </thead>
+    <tbody>
+        @foreach (var m in Model)
+        {
+            <tr data-id="@m.Id" data-ten="@m.TenHang" data-ma="@m.MaHang" class="@(m.IsActive ? "" : "bg-ngung")">
+                <td>@m.TenHang</td>
+                <td>@m.Dvt</td>
+                <td style="text-align:right">
+                    @if (m.DonGia <= 0) { <span class="text-danger">Chưa có giá</span> }
+                    else { @m.DonGia.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) }
+                </td>
+                <td>@m.GhiChu</td>
+                @if (coQuyenSua)
+                {
+                    <td><a class="btn btn-secondary" asp-controller="BangGia" asp-action="Edit" asp-route-id="@m.Id" title="Xem và sửa mặt hàng">Chi tiết</a></td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+<style>
+    #bg-bang { table-layout: fixed; width: 100%; }
+    #bg-bang td, #bg-bang th { overflow-wrap: anywhere; vertical-align: middle; }
+    #bg-bang td:nth-child(4) { white-space: normal; }   /* ghi chú: rộng nhất, xuống dòng khi dài */
+    #bg-bang tr.bg-ngung td { opacity: .6; }
+</style>
+
+@section Scripts {
+    <script>
+        (function () {
+            var nut = document.getElementById('bg-btn-upload'), tep = document.getElementById('bg-file'), fm = document.getElementById('bg-form-upload');
+            if (!nut || !tep || !fm) return;
+            nut.addEventListener('click', function () { tep.value = ''; tep.click(); });
+            tep.addEventListener('change', function () {
+                if (!tep.files || tep.files.length === 0) return;
+                var ten = tep.files[0].name;
+                if (confirm('Upload "' + ten + '" sẽ XÓA TOÀN BỘ bảng giá cũ và nạp lại từ file này.\n\nTiếp tục?')) { nut.disabled = true; nut.textContent = 'Đang upload...'; fm.submit(); }
+                else { tep.value = ''; }
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            function boDau(s) {
+                return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+            }
+            var o = document.getElementById('bg-q');
+            function loc() {
+                var k = boDau(o.value), n = 0;
+                document.querySelectorAll('#bg-bang tbody tr').forEach(function (tr) {
+                    var ok = !k || boDau(tr.getAttribute('data-ten')).indexOf(k) >= 0 || boDau(tr.getAttribute('data-ma')).indexOf(k) >= 0;
+                    tr.style.display = ok ? '' : 'none';
+                    if (ok) n++;
+                });
+                document.getElementById('bg-dem').textContent = n;
+                document.getElementById('bg-khong').style.display = n === 0 ? '' : 'none';
+            }
+            if (o) { o.addEventListener('input', loc); loc(); }
+        })();
+    </script>
+}

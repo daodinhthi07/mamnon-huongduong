@@ -1,0 +1,185 @@
+@model ApDungTuanViewModel
+@{
+    ViewData["Title"] = "Áp dụng tuần mẫu";
+}
+
+<style>
+    /* Bảng nhập số suất & tiền ăn: cột đều nhau, không xuống dòng lung tung */
+    .ls-ap-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+    table.ls-ap-dung { table-layout: fixed; width: 100%; min-width: 860px; border-collapse: collapse; }
+    table.ls-ap-dung th, table.ls-ap-dung td { padding: 8px 10px; vertical-align: middle; text-align: center; }
+    table.ls-ap-dung thead th { font-size: .78rem; line-height: 1.25; white-space: normal; }
+    table.ls-ap-dung thead tr.nhom th { border-bottom: 0; padding-bottom: 2px; }
+    table.ls-ap-dung thead tr.chi-tiet th { padding-top: 2px; }
+    table.ls-ap-dung td.ngay { text-align: left; white-space: nowrap; font-weight: 600; }
+    table.ls-ap-dung td.tong, table.ls-ap-dung th.tong { background: rgba(0,0,0,.03); }
+    table.ls-ap-dung input.form-control { width: 100%; box-sizing: border-box; text-align: center; padding: 6px 4px; }
+    table.ls-ap-dung input[type=number] { -moz-appearance: textfield; }
+    table.ls-ap-dung input[type=number]::-webkit-outer-spin-button,
+    table.ls-ap-dung input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    table.ls-ap-dung .nhom-suat { border-left: 2px solid rgba(0,0,0,.12); }
+    /* Ngày KHÔNG có trong file mẫu (VD Thứ 7): tô nền vàng nhạt để dễ thấy */
+    table.ls-bang-mon tr.ls-them td { background: #fff8e1; }
+    table.ls-bang-mon tr.ls-them td.tong { background: #fff1c2; }
+    .ls-them-ghichu { font-weight: 400; font-size: .72rem; color: #8a6d00; }
+</style>
+
+<h1>Áp dụng tuần mẫu</h1>
+
+@if (TempData["LoiMau"] is string loiMau)
+{
+    <div class="ls-loi">@loiMau</div>
+}
+
+<p class="ls-ghi-chu">
+    Mẫu: <strong>@Model.TenMau</strong>. File Excel xuất ra <strong>y như file mẫu</strong>, chỉ khác ngày, số suất ăn và tiền ăn 1 cháu bạn nhập dưới đây.
+    Số lượng thực phẩm trong bảng kê được co giãn theo số suất mới (nhà trẻ, mẫu giáo, ăn sáng riêng) rồi cân đối để
+    "Chênh lệch cuối ngày" về gần 0 như file mẫu.
+    <br /><strong>Ngày không có trong file mẫu (VD mẫu nghỉ Thứ 7 nhưng tuần mới có học):</strong> vẫn hiện ở bảng dưới (nền vàng) — nhập số suất và tiền ăn,
+    rồi chọn món ở mục <em>Đổi món</em> để thêm ngày đó vào tuần mới. Ngày nào để trống số suất và không chọn món thì không được thêm.
+</p>
+
+<form id="form-ap-dung" data-xuat-excel method="post" asp-controller="LichSuThucDon" asp-action="ApDung">
+    <input type="hidden" name="nguon" value="@Model.Nguon.ToString("yyyy-MM-dd")" />
+    <input type="hidden" name="thang" value="@Model.Thang" />
+
+    <div class="form-group">
+        <label for="tuanMoi">Tuần mới bắt đầu từ (phải là Thứ 2)</label>
+        <input type="date" id="tuanMoi" name="tuanMoi" class="form-control" value="@Model.TuanMoi.ToString("yyyy-MM-dd")" required />
+    </div>
+
+    @foreach (var coSo in Model.CoSo)
+    {
+        <h3>Cơ sở @coSo.Khoa — số suất ăn &amp; tiền ăn 1 cháu</h3>
+        <div class="ls-ap-wrap">
+        <table class="table ls-bang-mon ls-ap-dung" data-co-so="@coSo.Khoa">
+            <colgroup>
+                <col style="width:9%" />
+                <col style="width:11%" /><col style="width:11%" /><col style="width:11%" /><col style="width:12%" />
+                <col style="width:15%" /><col style="width:15%" /><col style="width:16%" />
+            </colgroup>
+            <thead>
+                <tr class="nhom">
+                    <th rowspan="2">Ngày</th>
+                    <th colspan="4" class="nhom-suat">Số suất ăn</th>
+                    <th colspan="3" class="nhom-suat">Tiền ăn / cháu (đ)</th>
+                </tr>
+                <tr class="chi-tiet">
+                    <th class="nhom-suat">Ăn sáng</th><th>Nhà trẻ</th><th>Mẫu giáo</th><th class="tong">Tổng trẻ<br />(NT + MG)</th>
+                    <th class="nhom-suat">Sáng</th><th>Nhà trẻ</th><th>Mẫu giáo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ngay in coSo.Ngay)
+                {
+                    <tr class="@(ngay.TrongMau ? "" : "ls-them")">
+                        <td class="ngay">@ngay.TenThu
+                            @if (!ngay.TrongMau)
+                            {
+                                <br /><span class="ls-them-ghichu">không có trong mẫu — nhập nếu có học</span>
+                            }
+                        </td>
+                        <td class="nhom-suat"><input type="number" min="0" step="1" class="form-control" name="s_@(coSo.Khoa)_@(ngay.Ngay)_0" value="@(ngay.Sang?.ToString("0"))" /></td>
+                        <td><input type="number" min="0" step="1" class="form-control" name="s_@(coSo.Khoa)_@(ngay.Ngay)_1" value="@(ngay.NhaTre?.ToString("0"))" /></td>
+                        <td><input type="number" min="0" step="1" class="form-control" name="s_@(coSo.Khoa)_@(ngay.Ngay)_2" value="@(ngay.MauGiao?.ToString("0"))" /></td>
+                        <td class="tong"><strong class="ls-tong-tre">@(((ngay.NhaTre ?? 0) + (ngay.MauGiao ?? 0)).ToString("0"))</strong></td>
+                        <td class="nhom-suat"><input type="number" min="0" step="1000" class="form-control" name="t_@(coSo.Khoa)_@(ngay.Ngay)_0" value="@(ngay.TienSang?.ToString("0"))" /></td>
+                        <td><input type="number" min="0" step="1000" class="form-control" name="t_@(coSo.Khoa)_@(ngay.Ngay)_1" value="@(ngay.TienNhaTre?.ToString("0"))" /></td>
+                        <td><input type="number" min="0" step="1000" class="form-control" name="t_@(coSo.Khoa)_@(ngay.Ngay)_2" value="@(ngay.TienMauGiao?.ToString("0"))" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    }
+
+    @if (Model.DoiMon.Count > 0)
+    {
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="chkDoiMon" />
+                <strong>Đổi món so với thực đơn mẫu / chọn món cho ngày không có trong mẫu (VD Thứ 7)</strong> (không tick = giữ nguyên món, xuất Excel y như cũ)
+            </label>
+        </div>
+        <div id="khuDoiMon" style="display:none">
+        <h3>Đổi món</h3>
+        <p class="ls-ghi-chu">
+            Để <strong>"-- giữ nguyên --"</strong> thì xuất Excel <strong>y như cũ</strong>. Nếu đổi <strong>ít nhất 1 món</strong>, hệ thống sẽ tự đặt thực đơn tuần mới vào hệ thống
+            (xóa thực đơn và số suất cũ của tuần đó), <strong>bỏ món cũ, thêm món mới</strong> và xuất Excel tính lại nguyên liệu + định lượng theo món mới.
+            <strong>Ngày không có trong mẫu (nền vàng, VD Thứ 7):</strong> chọn món cho từng bữa của Mẫu giáo (Nhà trẻ lấy theo Mẫu giáo) và nhớ nhập số suất ở bảng trên; hệ thống thêm ngày đó vào tuần mới rồi xuất Excel cả tuần.
+            Chỉ liệt kê món đã có định lượng nguyên liệu. Đổi món <strong>Mẫu giáo thì Nhà trẻ đổi theo</strong> (Xế Mẫu giáo = Chính chiều Nhà trẻ; món Xào chỉ có ở Mẫu giáo).
+        </p>
+        <div class="ls-ap-wrap">
+        <table class="table ls-bang-mon">
+            <thead><tr><th>Ngày</th><th>Khối</th><th>Bữa</th><th>Món trong mẫu</th><th>Đổi sang món</th></tr></thead>
+            <tbody>
+                @foreach (var d in Model.DoiMon)
+                {
+                    <tr class="@(d.TrongMau ? "" : "ls-them")">
+                        <td>@d.TenThu</td>
+                        <td>@d.TenKhoi@(d.DongBoNhaTre ? " (+ Nhà trẻ)" : "")</td>
+                        <td>@d.TenBua</td>
+                        <td>@(d.TrongMau ? d.MonMau : "—")</td>
+                        <td>
+                            <select class="form-control" name="doi_@(d.Ngay)_@(d.Khoi)_@(d.LoaiBuaId)" data-tim-mon disabled>
+                                <option value="">-- giữ nguyên --</option>
+                                @foreach (var m in Model.DsMon.Where(x => x.NhomId == d.NhomId))
+                                {
+                                    <option value="@m.Id">@m.Ten</option>
+                                }
+                            </select>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+        </div>
+    }
+
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="datHeThong" value="true" />
+            Đồng thời đặt thực đơn tuần mới vào hệ thống (XÓA thực đơn và số suất cũ của tuần đó, thay bằng thực đơn mẫu + số suất vừa nhập)
+        </label>
+        <input type="hidden" name="datHeThong" value="false" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Tải Excel (đúng mẫu, chỉ đổi ngày + số suất + tiền ăn)</button>
+    <a class="btn btn-secondary" asp-controller="LichSuThucDon" asp-action="Index" asp-route-thang="@Model.Thang">‹ Quay lại lịch sử</a>
+</form>
+
+@* Bấm "Tải Excel": site.js (thuộc tính data-xuat-excel trên form) hiện vòng quay chờ; thiếu giá trong Bảng giá thì hiện hộp thông báo cụ thể. *@
+
+<script>
+    // Ô "Đổi món": mặc định ẩn + vô hiệu hóa các ô chọn (không gửi lên server => giữ nguyên món mẫu); tick thì hiện và cho chọn.
+    (function () {
+        var chk = document.getElementById('chkDoiMon');
+        var khu = document.getElementById('khuDoiMon');
+        if (!chk || !khu) return;
+        function capNhat() {
+            khu.style.display = chk.checked ? '' : 'none';
+            khu.querySelectorAll('select').forEach(function (s) {
+                s.disabled = !chk.checked;
+                if (!chk.checked) {
+                    s.value = '';
+                    s.dispatchEvent(new Event('mon-dong-bo'));   // cập nhật ô tìm kiếm theo giá trị vừa reset
+                }
+            });
+        }
+        chk.addEventListener('change', capNhat);
+        capNhat();
+    })();
+
+    // Tổng số trẻ = Nhà trẻ + Mẫu giáo, tự cập nhật khi sửa số suất.
+    document.querySelectorAll('table.ls-ap-dung tbody tr').forEach(function (tr) {
+        var nt = tr.querySelector('input[name$="_1"][name^="s_"]');
+        var mg = tr.querySelector('input[name$="_2"][name^="s_"]');
+        var out = tr.querySelector('.ls-tong-tre');
+        if (!nt || !mg || !out) return;
+        function capNhat() { out.textContent = (parseFloat(nt.value) || 0) + (parseFloat(mg.value) || 0); }
+        nt.addEventListener('input', capNhat);
+        mg.addEventListener('input', capNhat);
+        capNhat();
+    });
+</script>

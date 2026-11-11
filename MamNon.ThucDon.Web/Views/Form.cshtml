@@ -1,0 +1,57 @@
+@model BangGiaFormVm
+@{
+    var dangSua = Model.Id is not null;
+    ViewData["Title"] = dangSua ? "Sửa mặt hàng" : "Thêm mặt hàng";
+    var actionUrl = dangSua ? Url.Action("Edit", "BangGia", new { id = Model.Id }) : Url.Action("Create", "BangGia");
+    var giaText = Model.DonGia.ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<h1>@(dangSua ? $"Sửa mặt hàng: {Model.TenHang}" : "Thêm mặt hàng vào bảng giá")</h1>
+<div asp-validation-summary="All" class="alert-danger"></div>
+
+<form method="post" action="@actionUrl">
+    @Html.AntiForgeryToken()
+    <div class="form-group">
+        <label>Mã hàng (tuỳ chọn)</label>
+        <input type="text" name="MaHang" class="form-control" value="@Model.MaHang" style="max-width:200px" />
+    </div>
+    <div class="form-group">
+        <label>Tên hàng</label>
+        <input type="text" name="TenHang" class="form-control" value="@Model.TenHang" required />
+    </div>
+    <div class="form-group">
+        <label>Đơn vị tính (ĐVT)</label>
+        <select name="DvtId" class="form-control" style="max-width:250px">
+            <option value="">-- Chọn ĐVT --</option>
+            @foreach (var d in Model.DsDvt)
+            {
+                <option value="@d.Id" selected="@(d.Id == Model.DvtId)">@d.TenDvt</option>
+            }
+        </select>
+        <small>Chưa có ĐVT cần dùng? Nhập vào ô dưới (nếu nhập thì dùng ĐVT này thay cho ô chọn ở trên):</small>
+        <input type="text" name="DvtMoi" class="form-control" value="@Model.DvtMoi" style="max-width:250px" placeholder="ĐVT mới (VD: Túi)" />
+        <small><strong>Lưu ý:</strong> chỉ ĐVT <em>Kg</em> được có số lẻ; mọi ĐVT khác (gói, chai, hộp, quả...) khi tính số lượng sẽ làm tròn thành số nguyên.</small>
+    </div>
+    <div class="form-group">
+        <label>Loại hàng</label>
+        <select name="LoaiHang" class="form-control" style="max-width:250px">
+            <option value="Thực phẩm tươi" selected="@(Model.LoaiHang == "Thực phẩm tươi")">Thực phẩm tươi</option>
+            <option value="Gia vị" selected="@(Model.LoaiHang == "Gia vị")">Gia vị</option>
+            <option value="Khác" selected="@(Model.LoaiHang == "Khác")">Khác</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Đơn giá (đ / 1 ĐVT)</label>
+        <input type="number" name="DonGia" class="form-control" value="@giaText" min="0" step="any" required style="max-width:250px" />
+    </div>
+    <div class="form-group">
+        <label>Ghi chú</label>
+        <input type="text" name="GhiChu" class="form-control" value="@Model.GhiChu" placeholder="VD: Tăng 10.000đ so với năm trước" />
+    </div>
+    <div class="form-group">
+        <label><input type="checkbox" name="IsActive" value="true" checked="@Model.IsActive" /> Đang dùng</label>
+        <input type="hidden" name="IsActive" value="false" />
+    </div>
+    <button type="submit" class="btn btn-primary">@(dangSua ? "Lưu thay đổi" : "Thêm vào bảng giá")</button>
+    <a class="btn btn-secondary" asp-controller="BangGia" asp-action="Index">Quay lại</a>
+</form>

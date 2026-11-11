@@ -1,0 +1,87 @@
+@model NhapKhoViewModel
+@{
+    ViewData["Title"] = "Nhập kho";
+}
+
+<h1>Lập phiếu nhập kho</h1>
+<div asp-validation-summary="All" class="alert-danger"></div>
+
+<form asp-controller="Kho" asp-action="NhapKho" method="post" id="form-nhap">
+    @Html.AntiForgeryToken()
+
+    <div class="soan-thucdon-header">
+        <div class="form-group">
+            <label>Cơ sở</label>
+            <select name="CoSoId" class="form-control">
+                <option value="">-- Chọn cơ sở --</option>
+                @foreach (var cs in Model.DsCoSo)
+                {
+                    <option value="@cs.Id" selected="@(cs.Id == Model.CoSoId)">@cs.TenCoSo</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Ngày nhập</label>
+            <input type="date" name="NgayNhap" class="form-control" value="@Model.NgayNhap.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="form-group">
+            <label>Người lập</label>
+            <input type="text" name="NguoiLap" class="form-control" value="@Model.NguoiLap" placeholder="Họ tên người lập phiếu" />
+        </div>
+    </div>
+
+    <h2>Chi tiết hàng nhập</h2>
+    <table class="table" id="bang-dong">
+        <thead><tr><th>Hàng hóa</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th><th></th></tr></thead>
+        <tbody id="bang-dong-body">
+            @for (var i = 0; i < Model.CacDong.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <select name="CacDong[@i].HangHoaId" class="form-control chon-hang">
+                            <option value="">-- Chọn hàng hóa --</option>
+                            @foreach (var hh in Model.DsHangHoa)
+                            {
+                                <option value="@hh.Id" data-gia="@hh.DonGiaGanNhat" selected="@(hh.Id == Model.CacDong[i].HangHoaId)">@hh.TenHang (@hh.Dvt?.TenDvt)</option>
+                            }
+                        </select>
+                    </td>
+                    <td><input type="number" step="0.001" min="0" name="CacDong[@i].SoLuong" class="form-control so-luong" value="@Model.CacDong[i].SoLuong" /></td>
+                    <td><input type="number" step="1" min="0" name="CacDong[@i].DonGia" class="form-control don-gia" value="@Model.CacDong[i].DonGia" /></td>
+                    <td class="thanh-tien">0đ</td>
+                    <td><button type="button" class="btn btn-link xoa-dong">Xóa</button></td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr><td colspan="3"><strong>Tổng cộng</strong></td><td colspan="2" id="tong-cong"><strong>0đ</strong></td></tr>
+        </tfoot>
+    </table>
+
+    <div class="soan-thucdon-actions">
+        <button type="button" class="btn btn-secondary" id="them-dong">+ Thêm dòng</button>
+        <button type="submit" class="btn btn-primary">Lưu phiếu nhập</button>
+    </div>
+</form>
+
+<template id="mau-dong">
+    <tr>
+        <td>
+            <select name="CacDong[__IDX__].HangHoaId" class="form-control chon-hang">
+                <option value="">-- Chọn hàng hóa --</option>
+                @foreach (var hh in Model.DsHangHoa)
+                {
+                    <option value="@hh.Id" data-gia="@hh.DonGiaGanNhat">@hh.TenHang (@hh.Dvt?.TenDvt)</option>
+                }
+            </select>
+        </td>
+        <td><input type="number" step="0.001" min="0" name="CacDong[__IDX__].SoLuong" class="form-control so-luong" value="0" /></td>
+        <td><input type="number" step="1" min="0" name="CacDong[__IDX__].DonGia" class="form-control don-gia" value="0" /></td>
+        <td class="thanh-tien">0đ</td>
+        <td><button type="button" class="btn btn-link xoa-dong">Xóa</button></td>
+    </tr>
+</template>
+
+@section Scripts {
+    <script src="~/js/kho-dong-hang.js" asp-append-version="true"></script>
+}

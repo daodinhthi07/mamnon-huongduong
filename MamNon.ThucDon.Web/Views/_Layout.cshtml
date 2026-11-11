@@ -1,0 +1,73 @@
+@{
+    var ctl = ViewContext.RouteData.Values["controller"]?.ToString();
+    string Act(string c) => string.Equals(ctl, c, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | MN Bạch Dương</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:wght@500;600&display=swap" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <nav class="topnav">
+        <div class="topnav-brand">Thực đơn &amp; Kho</div>
+
+        <div class="topnav-links">
+            <a href="/" class="@Act("Dashboard")">Trang chủ</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="ChiTietNgay" asp-action="Index" class="@Act("ChiTietNgay")">Chi tiết thực đơn - Chi tiền chợ</a>
+                <a asp-controller="LichSuThucDon" asp-action="Index" class="@Act("LichSuThucDon")">Lịch sử thực đơn</a>
+                @if (User.IsInRole(VaiTro.NhaBep) || User.IsInRole(VaiTro.HieuTruong) || User.IsInRole(VaiTro.QuanTri))
+                {
+                    <a asp-controller="CongKhaiThucDon" asp-action="Index" class="@Act("CongKhaiThucDon")">Công khai thực đơn</a>
+                    <a asp-controller="NhapThucDonExcel" asp-action="Index" class="@Act("NhapThucDonExcel")">Nhập thực đơn Excel</a>
+                }
+                <a asp-controller="Kho" asp-action="DinhMucGiaVi" class="@(ctl == "Kho" && ViewContext.RouteData.Values["action"]?.ToString() == "DinhMucGiaVi" ? "active" : "")">Định mức gia vị</a>
+                <a asp-controller="QuyTacNguyenLieu" asp-action="Index" class="@Act("QuyTacNguyenLieu")">Quy tắc nguyên liệu</a>
+                @* Đã ẩn khỏi menu (vẫn truy cập được bằng URL): Nhập kho, Xuất kho, Xuất Excel, Menu Builder.
+                   Bật lại: thêm các thẻ <a> tương ứng (Kho/NhapKho, Kho/XuatKho, XuatExcel/Index, MenuBuilder/Index) *@
+                <a asp-controller="MonAn" asp-action="Index" class="@Act("MonAn")">Quản lý món ăn</a>
+                <a asp-controller="BangGia" asp-action="Index" class="@Act("BangGia")">Bảng giá</a>
+                @if (User.IsInRole(VaiTro.HieuTruong) || User.IsInRole(VaiTro.QuanTri))
+                {
+                    <a asp-controller="NguoiDung" asp-action="Index" class="@Act("NguoiDung")">Quản lý người dùng</a>
+                }
+            }
+        </div>
+
+        <div class="topnav-account">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <span class="nav-user">Xin chào, @User.Identity!.Name</span>
+                <form method="post" asp-controller="Account" asp-action="Logout" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-link">Đăng xuất</button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login">Đăng nhập</a>
+            }
+        </div>
+    </nav>
+
+    <main class="app-main">
+        @if (TempData["ThongBao"] is string thongBao)
+        {
+            <div class="@(thongBao.StartsWith("Không xuất được Excel") ? "alert-danger" : "alert-thanh-cong")" style="white-space:pre-line">@thongBao</div>
+        }
+        @RenderBody()
+    </main>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/search-select.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

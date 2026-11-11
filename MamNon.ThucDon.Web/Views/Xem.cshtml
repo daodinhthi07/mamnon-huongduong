@@ -1,0 +1,98 @@
+@model MamNon.ThucDon.Web.Services.NhapKetQuaDoc
+@{
+    ViewData["Title"] = "Xem trước nhập thực đơn";
+    string[] thu = { "T2", "T3", "T4", "T5", "T6", "T7" };
+}
+
+<h1>Xem trước: @ViewBag.TenFile</h1>
+
+@foreach (var l in Model.Loi)
+{
+    <p class="ls-ghi-chu" style="color:var(--red)">@l</p>
+}
+
+@if (Model.Tuan.Count == 0)
+{
+    <p>Không đọc được tuần nào.</p>
+    <a class="btn btn-secondary" asp-action="Index">Quay lại</a>
+}
+else
+{
+    <form method="post" asp-action="ApDung">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="duLieuJson" value="@ViewBag.Json" />
+
+        <h2>1. Các tuần đọc được</h2>
+        <table class="table" style="max-width:760px">
+            <thead><tr><th>Nhập</th><th>Sheet</th><th>Tuần từ ngày</th><th>Số ô món</th><th>Ghi chú</th></tr></thead>
+            <tbody>
+            @foreach (var t in Model.Tuan)
+            {
+                <tr>
+                    <td><input type="checkbox" name="tuanChon" value="@t.BatDau.ToString("yyyy-MM-dd")" @(t.O.Count > 0 ? "checked" : "disabled") /></td>
+                    <td>@t.Sheet</td>
+                    <td>@t.BatDau.ToString("dd/MM/yyyy")</td>
+                    <td>@t.O.Count</td>
+                    <td>
+                        @if (t.O.Count == 0) { <span>Không có món (tuần nghỉ/ghi chú)</span> }
+                        @if (t.ThuBayNghi) { <span>Thứ 7 nghỉ. </span> }
+                        @foreach (var x in t.XungDot)
+                        {
+                            var ngayX = t.BatDau.AddDays(x.Ngay);
+                            var fileGhiNghi = x.Ngay == 5 && !string.IsNullOrWhiteSpace(t.GhiChuThu7);
+                            <div style="margin:6px 0;padding:6px 8px;border:1px solid #e8b04a;background:#fff7e0;border-radius:8px;font-size:13px">
+                                <label>
+                                    <input type="checkbox" name="moLaiNgay" value="@ngayX.ToString("yyyy-MM-dd")" @(fileGhiNghi ? "" : "checked") />
+                                    <strong>@(x.Ngay == 5 ? "Thứ 7" : "Thứ " + (x.Ngay + 2)) @ngayX.ToString("dd/MM")</strong> hệ thống đang đặt là <strong>@x.TrangThai</strong>@(x.GhiChu.Length > 0 ? " (" + x.GhiChu + ")" : "")
+                                    nhưng file có <strong>@x.SoO</strong> ô món — tick để mở lại thành "Học bình thường" và nhập món (không tick thì ngày này bị bỏ qua).
+                                </label>
+                                @if (fileGhiNghi) { <div style="color:#8a5a14">File ghi: “@t.GhiChuThu7” → mặc định không tick.</div> }
+                            </div>
+                        }
+                        @foreach (var b in t.BoQua.Take(6)) { <div style="font-size:12px;color:var(--muted,#777)">@b</div> }
+                        @if (t.BoQua.Count > 6) { <div style="font-size:12px">… và @(t.BoQua.Count - 6) mục bỏ qua khác</div> }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <h2>2. Món chưa có trong danh sách (@Model.ChuaCo.Count) — @Model.SoOKhop ô đã khớp tên</h2>
+        @if (Model.ChuaCo.Count == 0)
+        {
+            <p>Tất cả món trong file đã có trong danh sách.</p>
+        }
+        else
+        {
+            <p class="ls-ghi-chu">Mặc định <strong>tạo món mới</strong> (chưa có công thức nguyên liệu — cần bổ sung ở "Quản lý món ăn" trước khi tính tiền chợ).
+                Nếu món đã có tên khác, chọn món gợi ý, hoặc chọn "Bỏ qua" để để trống ô đó.</p>
+            <table class="table">
+                <thead><tr><th>Món trong file</th><th>Bữa</th><th>Số lần</th><th>Xử lý</th></tr></thead>
+                <tbody>
+                @for (var i = 0; i < Model.ChuaCo.Count; i++)
+                {
+                    var x = Model.ChuaCo[i];
+                    <tr>
+                        <td>@x.Ten<input type="hidden" name="keys" value="@x.Key" /></td>
+                        <td>@x.TenNhom</td>
+                        <td>@x.SoLan</td>
+                        <td>
+                            <select name="chons" class="form-control" style="max-width:340px">
+                                <option value="moi">➕ Tạo món mới "@x.Ten"</option>
+                                @foreach (var g in x.GoiY) { <option value="@g.Id">Dùng món có sẵn: @g.Ten</option> }
+                                <option value="bo">— Bỏ qua (để trống ô) —</option>
+                            </select>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <p><label><input type="checkbox" name="ghiDe" value="true" /> Ghi đè cả những ô đã có món (mặc định: chỉ điền ô còn trống)</label></p>
+        <div class="soan-thucdon-actions">
+            <button type="submit" class="btn btn-primary">Nhập vào thực đơn</button>
+            <a class="btn btn-secondary" asp-action="Index">Hủy</a>
+        </div>
+    </form>
+}
