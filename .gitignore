@@ -1,0 +1,23 @@
+# Build output
+**/bin/
+**/obj/
+.vs/
+.vscode/
+
+# Local data and backups
+**/*.db
+**/*.db-shm
+**/*.db-wal
+!MamNon.ThucDon.Web/kho_thuc_pham_mam_non.db
+*.zip
+files/
+artifacts/
+TongHop-MonKhac.xlsx
+MamNon.ThucDon.Web/App_Data/MauTuan/*.xlsx
+
+# Local configuration and tooling
+**/appsettings.Local.json
+**/appsettings.*.Local.json
+.env
+.env.*
+!.env.example

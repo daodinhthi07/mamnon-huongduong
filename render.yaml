@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: mamnon-thucdon-daodinh-demo
+    runtime: docker
+    plan: free
+    healthCheckPath: /dang-nhap
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:10000
+      - key: Admin__InitialPassword
+        sync: false
+      - key: Admin__ResetExistingPassword
+        value: "true"
