@@ -1,0 +1,66 @@
+@model DinhMucGiaViViewModel
+@{
+    ViewData["Title"] = "Định mức gia vị hằng ngày";
+}
+
+<h1>Định mức gia vị hằng ngày (cố định cho mọi ngày)</h1>
+
+<p>
+    Áp dụng cho MỌI ngày CHƯA lập phiếu xuất kho "Gia vị hằng ngày" thật ở trang
+    <a asp-controller="Kho" asp-action="XuatKho">Xuất kho</a> — không cần nhập tay từng
+    ngày nữa. Ngày nào đã lập phiếu thật thì phiếu đó được ưu tiên dùng, không bị định mức
+    ở đây ghi đè.
+</p>
+<p>
+    <strong>Lưu ý:</strong> nếu có nhiều dòng CÙNG LOẠI hàng (VD 2-3 loại gạo, 2 loại muối)
+    đều có định mức &gt; 0, mục "2. Gia vị hằng ngày" sẽ CỘNG DỒN tất cả — chỉ điền định
+    mức cho ĐÚNG 1 loại đang thực sự dùng, các loại brand khác để 0 (không cần xóa dòng).
+</p>
+
+@if (TempData["ThongBao"] is string tb)
+{
+    <div class="alert-success">@tb</div>
+}
+
+<form asp-controller="Kho" asp-action="DinhMucGiaVi" method="post">
+    @Html.AntiForgeryToken()
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Hàng hóa</th>
+                <th>ĐVT</th>
+                <th>Ăn sáng<br /><small>(Mẫu giáo)</small></th>
+                <th>Ăn sáng<br /><small>(Nhà trẻ)</small></th>
+                <th>Nhà trẻ<br /><small>(chính + xế)</small></th>
+                <th>Mẫu giáo<br /><small>(chính + xế)</small></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.CacDong.Count; i++)
+            {
+                var dong = Model.CacDong[i];
+                <tr>
+                    <td>
+                        @dong.TenHang
+                        <input type="hidden" name="CacDong[@i].HangHoaId" value="@dong.HangHoaId" />
+                        <input type="hidden" name="CacDong[@i].TenHang" value="@dong.TenHang" />
+                    </td>
+                    <td>@dong.Dvt</td>
+                    <td><input type="number" step="0.000001" min="0" class="form-control" name="CacDong[@i].AnSang" value="@dong.AnSang" /></td>
+                    <td><input type="number" step="0.000001" min="0" class="form-control" name="CacDong[@i].AnSangNhaTre" value="@dong.AnSangNhaTre" /></td>
+                    <td><input type="number" step="0.000001" min="0" class="form-control" name="CacDong[@i].NhaTre" value="@dong.NhaTre" /></td>
+                    <td><input type="number" step="0.000001" min="0" class="form-control" name="CacDong[@i].MauGiao" value="@dong.MauGiao" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn primary">Lưu định mức</button>
+</form>
+
+<p><small>
+    Đơn vị định mức là "định lượng cho 1 suất ăn" — tính = Số lượng xuất kho thật trong 1
+    ngày ÷ số suất ăn ngày đó. Danh sách trên chỉ hiện hàng hóa đang phân loại "Gia vị"
+    (Quản lý &gt; Hàng hóa) — muốn thêm/bớt mặt hàng vào mục "2. Gia vị hằng ngày" thì đổi
+    phân loại hàng hóa đó trước.
+</small></p>
