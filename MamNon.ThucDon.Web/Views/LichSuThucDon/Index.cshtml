@@ -1,0 +1,183 @@
+@model LichSuThucDonViewModel
+@{
+    ViewData["Title"] = "Lịch sử thực đơn";
+}
+
+<h1>Lịch sử thực đơn theo tháng</h1>
+
+<p class="ls-ghi-chu">
+    Mỗi tháng chia thành các tuần <strong>A, B, C, D, E</strong> (tuần 1, 2, 3, 4, 5 của tháng), mỗi tuần từ Thứ 2 đến Thứ 7.
+    Tuần thuộc tháng nào là theo số ngày rơi vào tháng đó (VD 28/09 – 03/10 là tuần E của tháng 9).
+    Trang này chỉ để xem lại; muốn sửa thực đơn một tuần, bấm "Xem/sửa trong Dashboard".
+</p>
+
+@if (TempData["LoiMau"] is string loiMau)
+{
+    <div class="ls-loi">@loiMau</div>
+}
+
+<form method="get" asp-controller="LichSuThucDon" asp-action="Index" class="ls-chon-thang">
+    <a class="btn btn-secondary" asp-controller="LichSuThucDon" asp-action="Index" asp-route-thang="@Model.ThangTruoc">‹ Tháng trước</a>
+    <div class="form-group">
+        <label for="thang">Tháng</label>
+        <input type="month" id="thang" name="thang" class="form-control" value="@Model.ThangInput" />
+    </div>
+    <button type="submit" class="btn btn-secondary">Xem</button>
+    <a class="btn btn-secondary" asp-controller="LichSuThucDon" asp-action="Index" asp-route-thang="@Model.ThangSau">Tháng sau ›</a>
+</form>
+
+<h2>Tháng @Model.Thang/@Model.Nam</h2>
+
+@if (Model.CacTuan.Count == 0)
+{
+    <p>Không có tuần nào trong tháng này.</p>
+}
+
+@foreach (var tuan in Model.CacTuan)
+{
+    <details class="ls-tuan" open="@tuan.CoThucDon">
+        <summary>
+            <span class="ls-chu-cai">@tuan.ChuCai</span>
+            <strong>Tuần @tuan.SoTuan tháng @Model.Thang</strong>
+            <span class="ls-khoang-ngay">@tuan.TuanBatDau.ToString("dd/MM/yyyy") – @tuan.TuanKetThuc.ToString("dd/MM/yyyy")</span>
+            @if (tuan.VatQuaHaiThang)
+            {
+                <span class="ls-vat-thang">vắt qua 2 tháng</span>
+            }
+            <span class="ls-tt @tuan.TrangThaiClass">@tuan.TrangThai</span>
+        </summary>
+
+        <div class="ls-tuan-noi-dung">
+            <p>
+                <a class="btn btn-secondary" asp-controller="Dashboard" asp-action="Index" asp-route-tuanBatDau="@tuan.TuanBatDau.ToString("yyyy-MM-dd")">Xem/sửa trong Dashboard</a>
+                @if (tuan.CoMau)
+                {
+                    <a class="btn btn-primary" asp-controller="LichSuThucDon" asp-action="ApDung" asp-route-nguon="@(tuan.MauThuHai.Value.ToString("yyyy-MM-dd"))" asp-route-thang="@Model.ThangInput">Áp dụng tuần này (xuất Excel y như mẫu)</a>
+                    <form method="post" asp-controller="LichSuThucDon" asp-action="CapNhatThucDon" style="display:inline" data-hien-cho="Đang cập nhật thực đơn, vui lòng chờ..." onsubmit="return confirm('XÓA hết thực đơn cũ của tuần này trong hệ thống và nạp lại theo file Excel mẫu?');">
+                        <input type="hidden" name="nguon" value="@(tuan.MauThuHai.Value.ToString("yyyy-MM-dd"))" />
+                        <input type="hidden" name="thang" value="@Model.ThangInput" />
+                        <button type="submit" class="btn btn-secondary">Cập nhật lại thực đơn trong hệ thống theo file mẫu</button>
+                    </form>
+                }
+                else
+                {
+                    <span class="ls-trong">Chưa có file Excel mẫu cho tuần này — tải lên ở cuối trang.</span>
+                }
+            </p>
+
+            @if (!tuan.CoThucDon)
+            {
+                <p class="ls-trong">Chưa có dữ liệu thực đơn của tuần này.</p>
+            }
+            else
+            {
+                foreach (var khoi in tuan.CacKhoi)
+                {
+                    <h3>THỰC ĐƠN @khoi.TenKhoi.ToUpper()</h3>
+                    <table class="table dashboard-table @khoi.ThemeClass">
+                        <thead>
+                            <tr>
+                                <th style="width:12%"></th>
+                                @for (var i = 0; i < 6; i++)
+                                {
+                                    <th>@LichSuThucDonViewModel.TenThu[i]<br /><small>@tuan.TuanBatDau.AddDays(i).ToString("dd/MM")</small></th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bua in khoi.CacBua)
+                            {
+                                <tr>
+                                    <td class="dashboard-ten-bua">@bua.TenBua</td>
+                                    @for (var i = 0; i < 6; i++)
+                                    {
+                                        <td>
+                                            @if (bua.Cac[i].TenMon is not null)
+                                            {
+                                                @bua.Cac[i].TenMon
+                                            }
+                                            else if (bua.Cac[i].Nghi)
+                                            {
+                                                <span class="ls-trong">Nghỉ</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="ls-trong">—</span>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+        </div>
+    </details>
+}
+
+<h2>File Excel mẫu các tuần</h2>
+<p class="ls-ghi-chu">
+    Tải lên các file thực đơn tuần (VD "TUẦN 5 THÁNG 9 E.xlsx"). Khi bấm "Áp dụng tuần này", ứng dụng xuất lại đúng file đó —
+    giữ nguyên mọi thứ — chỉ đổi <strong>ngày</strong> sang tuần bạn chọn và <strong>số suất ăn</strong> bạn nhập
+    (số lượng thực phẩm co giãn theo số suất, chênh lệch cuối ngày được cân về gần 0).
+</p>
+@if (Model.CacMau.Count == 0)
+{
+    <p class="ls-trong">Chưa có file mẫu nào.</p>
+}
+else
+{
+    <ul class="ls-ds-mau">
+        @foreach (var ten in Model.CacMau)
+        {
+            <li>@ten</li>
+        }
+    </ul>
+}
+<form method="post" enctype="multipart/form-data" asp-controller="LichSuThucDon" asp-action="TaiMau" class="ls-chon-thang" data-hien-cho="Đang tải và đọc file mẫu, vui lòng chờ...">
+    <input type="hidden" name="thang" value="@Model.ThangInput" />
+    <div class="form-group">
+        <label for="files">Tải file mẫu (chọn được nhiều file .xlsx)</label>
+        <input type="file" id="files" name="files" accept=".xlsx" multiple class="form-control" />
+    </div>
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="capNhatHeThong" value="true" checked />
+            Đồng thời XÓA thực đơn cũ của tuần đó và cập nhật lại theo file vừa tải (kể cả số suất ăn)
+        </label>
+        <input type="hidden" name="capNhatHeThong" value="false" />
+    </div>
+    <button type="submit" class="btn btn-secondary">Tải lên</button>
+</form>
+
+<h2>Món đã dùng trong tháng @Model.Thang/@Model.Nam</h2>
+
+@if (Model.MonDaDung.Count == 0)
+{
+    <p class="ls-trong">Chưa có món nào được ghi nhận trong tháng này.</p>
+}
+else
+{
+    <p class="ls-ghi-chu">
+        Sắp theo số ngày dùng (nhiều nhất trước). Món dùng từ 2 ngày trở lên trong tháng được tô vàng để dễ thấy lặp món.
+        "Lần dùng gần nhất trước tháng" lấy từ thực đơn đã có trong hệ thống.
+    </p>
+    <table class="table ls-bang-mon">
+        <thead>
+            <tr><th>Món</th><th>Loại món</th><th>Số ngày dùng</th><th>Ngày dùng (tuần – ngày)</th><th>Lần dùng gần nhất trước tháng</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var mon in Model.MonDaDung)
+            {
+                <tr class="@(mon.SoNgay >= 2 ? "ls-lap" : "")">
+                    <td>@mon.TenMon</td>
+                    <td>@mon.TenNhom</td>
+                    <td>@mon.SoNgay</td>
+                    <td>@string.Join(", ", mon.LanDung.Select(l => l.Tuan + " " + l.Ngay.ToString("dd/MM")))</td>
+                    <td>@(mon.LanCuoiTruocThang?.ToString("dd/MM/yyyy") ?? "chưa có trong lịch sử")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
