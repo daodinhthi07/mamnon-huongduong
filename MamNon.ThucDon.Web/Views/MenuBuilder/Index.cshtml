@@ -1,0 +1,63 @@
+@model MenuBuilderFormVm
+@{
+    ViewData["Title"] = "Menu Builder (Excel)";
+}
+
+<h1>Nhân bản Chợ TC → Chợ PH ok / Chợ ĐT ok</h1>
+<p>Upload file tuần đã điền thực đơn + số cháu TC ở sheet "Chợ TC". Script sẽ tự cập nhật ngày tháng (nếu điền),
+   nhân bản sang PH/ĐT theo số cháu, ép Chênh lệch cuối ngày = 0, và tự dò/sửa lỗi #DIV/0!.</p>
+
+<div asp-validation-summary="All" class="alert-danger"></div>
+
+<form asp-controller="MenuBuilder" asp-action="Index" method="post" enctype="multipart/form-data" data-xuat-excel>
+    @Html.AntiForgeryToken()
+
+    <div class="form-group">
+        <label>File Excel tuần (.xlsx)</label>
+        <input type="file" name="File" accept=".xlsx" class="form-control" required />
+    </div>
+
+    <div class="soan-thucdon-header">
+        <div class="form-group">
+            <label>Ngày Thứ 2 đầu tuần (tùy chọn)</label>
+            <input type="date" name="StartDate" class="form-control" />
+        </div>
+    </div>
+
+    <h2>Số cháu PH (áp cho cả tuần)</h2>
+    <div class="soan-thucdon-header">
+        <div class="form-group"><label>Ăn sáng</label><input type="number" name="PhSang" class="form-control" value="0" /></div>
+        <div class="form-group"><label>Nhà trẻ</label><input type="number" name="PhNhaTre" class="form-control" value="0" /></div>
+        <div class="form-group"><label>Mẫu giáo</label><input type="number" name="PhMauGiao" class="form-control" value="0" /></div>
+    </div>
+    <div class="form-group">
+        <label>Hoặc số cháu PH khác nhau từng ngày (JSON 6 bộ, Thứ 2→Thứ 7 — để trống nếu dùng số ở trên)</label>
+        <input type="text" name="PhCountsPerDayJson" class="form-control" placeholder="[[220,70,290],[220,70,290],[200,65,280],[210,68,285],[215,70,288],[150,50,200]]" />
+    </div>
+
+    <h2>Số cháu ĐT (áp cho cả tuần)</h2>
+    <div class="soan-thucdon-header">
+        <div class="form-group"><label>Ăn sáng</label><input type="number" name="DtSang" class="form-control" value="0" /></div>
+        <div class="form-group"><label>Nhà trẻ</label><input type="number" name="DtNhaTre" class="form-control" value="0" /></div>
+        <div class="form-group"><label>Mẫu giáo</label><input type="number" name="DtMauGiao" class="form-control" value="0" /></div>
+    </div>
+    <div class="form-group">
+        <label>Hoặc số cháu ĐT khác nhau từng ngày (JSON 6 bộ — để trống nếu dùng số ở trên)</label>
+        <input type="text" name="DtCountsPerDayJson" class="form-control" placeholder="[[60,0,67],[60,0,67],[55,0,60],[58,0,63],[60,0,65],[40,0,45]]" />
+    </div>
+
+    <h2>Số cháu TC (tùy chọn — để trống để giữ nguyên số có sẵn trong file)</h2>
+    <div class="soan-thucdon-header">
+        <div class="form-group"><label>Ăn sáng</label><input type="number" name="TcSang" class="form-control" /></div>
+        <div class="form-group"><label>Nhà trẻ</label><input type="number" name="TcNhaTre" class="form-control" /></div>
+        <div class="form-group"><label>Mẫu giáo</label><input type="number" name="TcMauGiao" class="form-control" /></div>
+    </div>
+    <div class="form-group">
+        <label>Hoặc số cháu TC khác nhau từng ngày (JSON 6 bộ — để trống nếu không ghi đè số cháu TC)</label>
+        <input type="text" name="TcCountsPerDayJson" class="form-control" />
+    </div>
+
+    <div class="soan-thucdon-actions">
+        <button type="submit" class="btn btn-primary">Chạy &amp; tải file kết quả</button>
+    </div>
+</form>
