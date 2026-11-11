@@ -1,5 +1,6 @@
 @{
     var ctl = ViewContext.RouteData.Values["controller"]?.ToString();
+    var quanLy = User.IsInRole(VaiTro.QuanLy);
     string Act(string c) => string.Equals(ctl, c, StringComparison.OrdinalIgnoreCase) ? "active" : "";
 }
 <!DOCTYPE html>
@@ -22,19 +23,27 @@
             <a href="/" class="@Act("Dashboard")">Trang chủ</a>
             @if (User.Identity?.IsAuthenticated == true)
             {
+                @if (!quanLy) {
                 <a asp-controller="ChiTietNgay" asp-action="Index" class="@Act("ChiTietNgay")">Chi tiết thực đơn - Chi tiền chợ</a>
+                }
                 <a asp-controller="LichSuThucDon" asp-action="Index" class="@Act("LichSuThucDon")">Lịch sử thực đơn</a>
-                @if (User.IsInRole(VaiTro.NhaBep) || User.IsInRole(VaiTro.HieuTruong) || User.IsInRole(VaiTro.QuanTri))
+                @if (User.IsInRole(VaiTro.NhaBep) || User.IsInRole(VaiTro.HieuTruong) || User.IsInRole(VaiTro.QuanTri) || quanLy)
                 {
                     <a asp-controller="CongKhaiThucDon" asp-action="Index" class="@Act("CongKhaiThucDon")">Công khai thực đơn</a>
                     <a asp-controller="NhapThucDonExcel" asp-action="Index" class="@Act("NhapThucDonExcel")">Nhập thực đơn Excel</a>
                 }
+                @if (!quanLy)
+                {
                 <a asp-controller="Kho" asp-action="DinhMucGiaVi" class="@(ctl == "Kho" && ViewContext.RouteData.Values["action"]?.ToString() == "DinhMucGiaVi" ? "active" : "")">Định mức gia vị</a>
                 <a asp-controller="QuyTacNguyenLieu" asp-action="Index" class="@Act("QuyTacNguyenLieu")">Quy tắc nguyên liệu</a>
+                }
                 @* Đã ẩn khỏi menu (vẫn truy cập được bằng URL): Nhập kho, Xuất kho, Xuất Excel, Menu Builder.
                    Bật lại: thêm các thẻ <a> tương ứng (Kho/NhapKho, Kho/XuatKho, XuatExcel/Index, MenuBuilder/Index) *@
                 <a asp-controller="MonAn" asp-action="Index" class="@Act("MonAn")">Quản lý món ăn</a>
+                @if (!quanLy)
+                {
                 <a asp-controller="BangGia" asp-action="Index" class="@Act("BangGia")">Bảng giá</a>
+                }
                 @if (User.IsInRole(VaiTro.HieuTruong) || User.IsInRole(VaiTro.QuanTri))
                 {
                     <a asp-controller="NguoiDung" asp-action="Index" class="@Act("NguoiDung")">Quản lý người dùng</a>
