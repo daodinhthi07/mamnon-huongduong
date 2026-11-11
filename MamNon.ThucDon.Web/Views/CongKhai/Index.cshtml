@@ -8,7 +8,7 @@
 
 <h1>Công khai thực đơn cho phụ huynh</h1>
 <p class="ls-ghi-chu">Phụ huynh xem thực đơn tại một đường link cố định, <strong>không cần đăng nhập</strong>, chỉ thấy tên món theo từng bữa.
-    Tiền chợ, định lượng, nguyên liệu và xuất kho <strong>không</strong> được công khai.
+    Tab "Chi tiết" chỉ hiện nội dung <strong>file Excel chi tiết từng ngày</strong> bạn tải lên ở mục bên dưới (bắt buộc có mới công khai được); tiền chợ nội bộ và xuất kho <strong>không</strong> được công khai.
     Thực đơn dùng chung cho cả trường (lấy từ Trang chủ).</p>
 
 <form method="get" class="soan-thucdon-actions" style="margin-bottom:12px">
@@ -70,6 +70,58 @@
     </table>
     <button type="submit" class="btn btn-secondary">Lưu phụ sáng / phụ chiều</button>
 </form>
+
+@if (Model.BatBuocFile)
+{
+    var thieuFile = Model.FileNgay.Where(f => f.CanFile && !f.CoFile).ToList();
+    string[] tenThuFile = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7" };
+    <h2>File chi tiết từng ngày <span style="color:var(--red);font-size:14px">(bắt buộc để công khai)</span></h2>
+    <p class="ls-ghi-chu">Mỗi ngày có món phải có <strong>1 file Excel chi tiết trong ngày</strong> (file "Bảng theo dõi và đánh giá chất lượng thực phẩm" gồm 2 sheet ĂN SÁNG và ĂN TRƯA).
+        Chưa đủ file thì <strong>không công khai được</strong>. Phụ huynh xem tab "Chi tiết" đúng theo nội dung file này; ngày không có file thì để trống.
+        Tải file mới lên thay file cũ rồi bấm "Cập nhật công khai".</p>
+    @if (thieuFile.Count > 0)
+    {
+        <p class="ls-ghi-chu" style="color:var(--red)">Đang thiếu file chi tiết: @(string.Join(", ", thieuFile.Select(f => tenThuFile[f.Ngay] + " (" + f.Date.ToString("dd/MM") + ")"))).</p>
+    }
+    <table class="table" style="max-width:900px">
+        <thead><tr><th>Ngày</th><th>Trạng thái</th><th>Tải file (.xlsx)</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var f in Model.FileNgay)
+        {
+            <tr>
+                <td>@tenThuFile[f.Ngay] · @f.Date.ToString("dd/MM")</td>
+                <td>
+                    @if (f.Nghi) { <span>Ngày nghỉ — không cần file</span> }
+                    else if (f.CoFile) { <span>✅ @f.TenFile<br /><small>@f.TaiLuc@(string.IsNullOrWhiteSpace(f.NguoiTai) ? "" : " · " + f.NguoiTai)</small></span> }
+                    else if (f.CoMon) { <span style="color:var(--red)">❌ Chưa có file</span> }
+                    else { <span class="ls-ghi-chu">Chưa có thực đơn ngày này</span> }
+                </td>
+                <td>
+                    @if (!f.Nghi)
+                    {
+                        <form method="post" asp-action="TaiFileNgay" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center">
+                            <input type="hidden" name="tuan" value="@tuanStr" />
+                            <input type="hidden" name="ngay" value="@f.Ngay" />
+                            <input type="file" name="file" accept=".xlsx" class="form-control" required />
+                            <button type="submit" class="btn btn-secondary">@(f.CoFile ? "Thay file" : "Tải lên")</button>
+                        </form>
+                    }
+                </td>
+                <td>
+                    @if (f.CoFile)
+                    {
+                        <form method="post" asp-action="XoaFileNgay" style="display:inline" onsubmit="return confirm('Xóa file chi tiết của ngày này?')">
+                            <input type="hidden" name="tuan" value="@tuanStr" />
+                            <input type="hidden" name="ngay" value="@f.Ngay" />
+                            <button type="submit" class="btn btn-secondary">Xóa</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
 
 <div class="soan-thucdon-actions" style="margin-top:16px">
     <a class="btn btn-secondary" target="_blank" rel="noopener" href="@Url.Content("~/thuc-don-phu-huynh")?xemTruoc=@tuanStr">Xem trước (giao diện phụ huynh)</a>

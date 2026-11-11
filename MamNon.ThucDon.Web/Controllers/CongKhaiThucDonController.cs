@@ -40,6 +40,34 @@ public sealed class CongKhaiThucDonController : Controller
         return RedirectToAction(nameof(Index), new { tuan = tuan.ToString("yyyy-MM-dd") });
     }
 
+    private IActionResult QuayVe(DateOnly tuan) => RedirectToAction(nameof(Index), new { tuan = tuan.ToString("yyyy-MM-dd") });
+
+    /// <summary>Tải file Excel chi tiết trong ngày (BẮT BUỘC để công khai ngày đó). ngay: 0 = Thứ 2 ... 5 = Thứ 7.</summary>
+    [HttpPost("file-ngay")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TaiFileNgay(DateOnly tuan, int ngay, IFormFile? file)
+    {
+        if (file is null || file.Length == 0) { TempData["ThongBao"] = "Chưa chọn file Excel."; return QuayVe(tuan); }
+        if (!file.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)) { TempData["ThongBao"] = "Chỉ nhận file .xlsx."; return QuayVe(tuan); }
+        if (file.Length > 5_000_000) { TempData["ThongBao"] = "File quá lớn (tối đa 5 MB)."; return QuayVe(tuan); }
+        var u = await _userManager.GetUserAsync(User);
+        await using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+        ms.Position = 0;
+        var (ok, msg) = await _svc.LuuFileNgayAsync(tuan, ngay, ms, Path.GetFileName(file.FileName), u?.HoTen ?? u?.UserName);
+        TempData["ThongBao"] = ok ? msg : "Không nhận được file: " + msg;
+        return QuayVe(tuan);
+    }
+
+    [HttpPost("xoa-file-ngay")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> XoaFileNgay(DateOnly tuan, int ngay)
+    {
+        await _svc.XoaFileNgayAsync(tuan, ngay);
+        TempData["ThongBao"] = "Đã xóa file chi tiết của ngày này. Nhớ bấm \"Cập nhật công khai\" nếu tuần đã công khai.";
+        return QuayVe(tuan);
+    }
+
     [HttpPost("cong-khai")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CongKhai(DateOnly tuan)

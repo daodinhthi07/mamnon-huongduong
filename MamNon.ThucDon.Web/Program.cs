@@ -30,6 +30,7 @@ builder.Services.AddDbContext<ThucDonDbContext>(options =>
 // Công khai thực đơn cho phụ huynh — bảng riêng (cong_khai_tuan/cong_khai_mon), không đụng dữ liệu cũ
 builder.Services.AddDbContext<MamNon.ThucDon.Web.Infrastructure.Data.CongKhaiDbContext>(options =>
     options.UseSqlite(connectionString));
+builder.Services.AddScoped<MamNon.ThucDon.Web.Services.TongHopNgayService>();   // chi tiết nguyên liệu & giá cả 3 cơ sở theo ngày (chụp lúc Công khai)
 builder.Services.AddScoped<MamNon.ThucDon.Web.Services.CongKhaiThucDonService>();
 builder.Services.AddScoped<MamNon.ThucDon.Web.Services.NhapThucDonExcelService>();
 

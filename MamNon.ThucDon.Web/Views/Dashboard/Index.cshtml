@@ -46,7 +46,10 @@
         <div class="ph-chon-khoi" id="ph-chon-khoi" role="group" aria-label="Chọn khối">
             <button type="button" data-khoi="nhaTre">🍼 Nhà trẻ</button>
             <button type="button" data-khoi="mauGiao">🎒 Mẫu giáo</button>
-            <button type="button" data-khoi="ca">👨‍👩‍👧 Cả hai</button>
+            @if (!quanLy)
+            {
+            <button type="button" data-khoi="chitiet">🧾 Chi tiết</button>
+            }
         </div>
         <section class="ph-may-tinh" id="ph-may-tinh" aria-label="Thực đơn cả tuần"></section>
         <section class="ph-dien-thoai" id="ph-dien-thoai" aria-label="Thực đơn theo ngày">
@@ -163,5 +166,6 @@
         window.DASHBOARD_DS_PHU = @Json.Serialize(new { sang = Model.DsPhuSang, chieu = Model.DsPhuChieu });
     </script>
     <script src="~/js/dashboard.js" asp-append-version="true"></script>
+    <script src="~/js/tong-hop-ngay.js" asp-append-version="true"></script>
     <script src="~/js/dashboard-bang.js" asp-append-version="true"></script>
 }
