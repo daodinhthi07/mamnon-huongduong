@@ -3,7 +3,9 @@
     ViewData["Title"] = "Quản lý món ăn";
     var tuKhoa = ViewData["TuKhoa"] as string ?? string.Empty;
     var tongSo = ViewData["TongSo"] is int t ? t : Model.Count;
-    var cacNhom = Model.Select(m => m.TenNhomBuaAn).Where(n => !string.IsNullOrEmpty(n)).Distinct().OrderBy(n => n).ToList();
+    var tatCaNhom = ViewData["TatCaNhom"] as List<string> ?? new List<string>();
+    var cacNhom = tatCaNhom.Concat(Model.Select(m => m.TenNhomBuaAn ?? ""))
+        .Where(n => !string.IsNullOrEmpty(n)).Distinct().ToList();
 }
 
 <h1>Danh mục món ăn</h1>
