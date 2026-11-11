@@ -1,0 +1,55 @@
+@model XuatExcelViewModel
+@{
+    ViewData["Title"] = "Xuất Excel";
+}
+
+<h1>Xuất thực đơn ra Excel</h1>
+
+<div class="soan-thucdon-header">
+    <div class="form-group">
+        <label>Cơ sở</label>
+        <select id="coSoId" class="form-control">
+            <option value="">-- Chọn cơ sở --</option>
+            @foreach (var cs in Model.DsCoSo)
+            {
+                <option value="@cs.Id" selected="@(cs.Id == Model.CoSoId)">@cs.TenCoSo</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Khối</label>
+        <select id="khoiId" class="form-control">
+            <option value="">-- Chọn khối --</option>
+            @foreach (var k in Model.DsKhoi)
+            {
+                <option value="@k.Id" selected="@(k.Id == Model.KhoiId)">@k.TenKhoi</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Ngày</label>
+        <input type="date" id="ngay" class="form-control" value="@Model.Ngay.ToString("yyyy-MM-dd")" />
+    </div>
+</div>
+
+<p>File sẽ gồm 2 sheet: <strong>Thực đơn</strong> (bữa × món của ngày đã chọn) và
+   <strong>Chợ</strong> (nhu cầu nguyên liệu tính tự động + đối chiếu ngân sách nếu ngày đó đã có định mức).</p>
+
+<button type="button" class="btn btn-primary" id="btn-tai">Tải file Excel</button>
+
+@section Scripts {
+    <script>
+        document.getElementById('btn-tai').addEventListener('click', function () {
+            var coSoId = document.getElementById('coSoId').value;
+            var khoiId = document.getElementById('khoiId').value;
+            var ngay = document.getElementById('ngay').value;
+            if (!coSoId || !khoiId) {
+                alert('Vui lòng chọn cơ sở và khối.');
+                return;
+            }
+            var url = '/xuat-excel/tai?coSoId=' + coSoId + '&khoiId=' + khoiId + '&ngay=' + ngay;
+            // Vòng quay chờ + hộp thông báo lỗi cụ thể (VD nguyên liệu không có trong Bảng giá) — xem site.js.
+            if (window.xuatExcelUrl) window.xuatExcelUrl(url); else window.location.href = url;
+        });
+    </script>
+}
