@@ -1,14 +1,16 @@
 @model DashboardViewModel
 @{
     ViewData["Title"] = "Trang chủ";
+    var quanLy = User.IsInRole(MamNon.ThucDon.Web.Identity.VaiTro.QuanLy);
     // Mọi tài khoản đều xem được; chỉ Nhà bếp / Hiệu trưởng / Quản trị được chọn món và lưu.
     var duocSua = User.IsInRole(MamNon.ThucDon.Web.Identity.VaiTro.NhaBep)
         || User.IsInRole(MamNon.ThucDon.Web.Identity.VaiTro.HieuTruong)
-        || User.IsInRole(MamNon.ThucDon.Web.Identity.VaiTro.QuanTri);
+        || User.IsInRole(MamNon.ThucDon.Web.Identity.VaiTro.QuanTri)
+        || User.IsInRole(MamNon.ThucDon.Web.Identity.VaiTro.QuanLy);
 }
 
-<h1>Trang chủ — Thực đơn tuần (dùng chung cho mọi cơ sở)</h1>
-<div class="soan-thucdon-header">
+<h1 class="dash-h1">Trang chủ — Thực đơn tuần <small>(dùng chung cho mọi cơ sở)</small></h1>
+<div class="soan-thucdon-header dash-header">
     <div class="form-group">
         <label>Tuần (Thứ 2 đầu tuần)</label>
         <input type="date" id="tuanBatDau" class="form-control" value="@Model.TuanBatDau.ToString("yyyy-MM-dd")" />
@@ -32,9 +34,11 @@
     .dashboard-thu7-tb { margin-left: 8px; font-size: 13px; color: var(--ink-soft, #726a5e); }
 </style>
 
-<p>
+<p class="dash-tuan">
     <strong>TUẦN ( @Model.TuanBatDau.ToString("dd/MM/yyyy") - @Model.TuanBatDau.AddDays(5).ToString("dd/MM/yyyy") )</strong>
 </p>
+
+<div id="dash-chua-luu" class="dash-chua-luu" hidden>✏️ Có thay đổi món <strong>chưa lưu</strong> — bấm "Lưu nháp cả tuần" hoặc "Lưu &amp; công khai" để ghi vào hệ thống.</div>
 
 @* Bảng thực đơn tuần — giao diện giống trang thực đơn cho phụ huynh, CHỈ ĐỂ XEM. Bấm tiêu đề ngày để mở Chi tiết ngày đó. *@
 <div id="bang-tuan">
@@ -49,7 +53,10 @@
             <div class="ph-chon-ngay" id="ph-chon-ngay"></div>
             <div class="ph-the-ngay" id="ph-the-ngay"></div>
         </section>
-        <p class="ph-ghi-chu">Bảng chỉ để xem. Bấm vào tiêu đề ngày (Thứ Hai … Thứ Bảy) để mở Chi tiết ngày đó.</p>
+        @if (duocSua || !quanLy)
+        {
+        <p class="ph-ghi-chu">@(duocSua ? "Bấm vào ô món để sửa." : "")@(quanLy ? "" : " Bấm tiêu đề ngày (Thứ Hai … Thứ Bảy) để mở Chi tiết ngày đó.")</p>
+        }
     </div>
 </div>
 
@@ -69,7 +76,7 @@
             {
                 var monId = bua.MonTheoNgay[i];
                 var tenMon = monId is int idMon ? (Model.MonDangDung.FirstOrDefault(m => m.Id == idMon)?.TenMon ?? Model.DsMonAn.FirstOrDefault(m => m.Id == idMon)?.TenMon ?? "") : "";
-                <input type="hidden" class="dashboard-chon-mon" data-khoi-id="@khoi.KhoiId" data-khoi="@khoiKey" data-bua-id="@bua.BuaId" data-bua-ten="@bua.TenBua" data-ngay="@i" data-ten="@tenMon" value="@(monId?.ToString() ?? "")" />
+                <input type="hidden" class="dashboard-chon-mon" data-khoi-id="@khoi.KhoiId" data-khoi="@khoiKey" data-bua-id="@bua.BuaId" data-bua-ten="@bua.TenBua" data-nhom="@(bua.NhomBuaAnId?.ToString() ?? "")" data-ngay="@i" data-ten="@tenMon" value="@(monId?.ToString() ?? "")" />
             }
         }
     }
@@ -78,18 +85,49 @@
 @{
     var ngayDauTuan = Model.TuanBatDau.ToString("yyyy-MM-dd");
 }
-<div class="soan-thucdon-actions">
+<div class="soan-thucdon-actions dash-actions">
+    @if (!quanLy)
+    {
     <button type="button" class="btn btn-secondary" id="btn-chi-tiet" data-ngay="@ngayDauTuan"
             data-href="@Url.Action("Index", "ChiTietNgay", new { ngay = ngayDauTuan })">Chi tiết</button>
+    }
     @if (duocSua)
     {
         <button type="button" class="btn btn-secondary" onclick="dashboardLuu(false)">Lưu nháp cả tuần</button>
+        @if (!quanLy)
+        {
         <button type="button" class="btn btn-secondary" onclick="dashboardNgauNhienCaTuan()" title="Chọn ngẫu nhiên món cả tuần (Thứ 2 → Thứ 7): không lặp món trong tuần, không trùng món của tuần gần nhất; số suất ăn lấy theo tuần gần nhất">🎲 Ngẫu nhiên cả tuần</button>
+        }
         <button type="button" class="btn btn-secondary" onclick="dashboardXoaCaTuan()" title="Xóa món đã chọn của cả tuần">🧹 Xóa cả tuần</button>
     }
+    @if (!quanLy)
+    {
     <button type="button" class="btn btn-primary" id="btn-xuat-excel" data-ngay="@ngayDauTuan"
             data-href="@Url.Action("BangKeCho", "XuatExcel", new { ngay = ngayDauTuan })">Xuất Excel</button>
+    }
 </div>
+@if (quanLy)
+{
+    <script>window.khongMoChiTiet = true;</script>
+}
+@if (duocSua)
+{
+    <div class="ck-nhanh" title="Lưu các món vừa đổi rồi công khai ngay cho phụ huynh. Chọn &quot;Đến hết ngày&quot; thì phụ huynh chỉ thấy từ Thứ 2 đến hết ngày đó; các ngày sau chưa hiện.">
+        <strong>🌐 Lưu &amp; công khai:</strong>
+        <label><input type="radio" name="phamViCongKhai" value="tuan" checked /> Cả tuần</label>
+        <label><input type="radio" name="phamViCongKhai" value="ngay" /> Đến hết ngày</label>
+        <span id="ck-chon-ngay">
+            @{ var tenThu = new[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7" }; }
+            <select id="ck-den-ngay" class="form-control">
+                @for (var i = 0; i < 6; i++)
+                {
+                    <option value="@i">@tenThu[i] (@Model.TuanBatDau.AddDays(i).ToString("dd/MM"))</option>
+                }
+            </select>
+        </span>
+        <button type="button" class="btn btn-primary" onclick="dashboardLuuCongKhai()">💾 Lưu &amp; công khai</button>
+    </div>
+}
 @if (!duocSua)
 {
     <p class="ls-ghi-chu">Tài khoản của bạn chỉ có quyền <strong>xem</strong> thực đơn.</p>
@@ -102,6 +140,9 @@
     <input type="hidden" name="guiDuyet" id="hiddenGuiDuyet" value="false" />
     <input type="hidden" name="moChiTietNgay" id="hiddenMoChiTietNgay" value="" />
     <input type="hidden" name="xuatExcel" id="hiddenXuatExcel" value="false" />
+    <input type="hidden" name="congKhai" id="hiddenCongKhai" value="false" />
+    <input type="hidden" name="cacNgay" id="hiddenCacNgay" value="" />
+    <input type="hidden" name="phuJson" id="hiddenPhuJson" value="" />
 </form>
 
 @section Styles {
@@ -112,6 +153,14 @@
     <script>
         // id món -> tên món (để bảng hiện đúng tên khi Ngẫu nhiên điền món mới)
         window.DASHBOARD_TEN_MON = @Json.Serialize(Model.DsMonAn.Concat(Model.MonDangDung).GroupBy(m => m.Id).ToDictionary(g => g.Key.ToString(), g => g.First().TenMon));
+    </script>
+    <script>
+        // danh sách món để chọn khi sửa trên Trang chủ: { id, ten, nhom (nhóm bữa) } — gồm món đang dùng (kể cả đã ẩn) để không mất món đã lưu.
+        window.DASHBOARD_DS_MON = @Json.Serialize(Model.DsMonAn.Concat(Model.MonDangDung).GroupBy(m => m.Id).Select(g => new { id = g.Key, ten = g.First().TenMon, nhom = g.First().NhomBuaAnId }).OrderBy(m => m.ten).ToList());
+    </script>
+    <script>
+        // món phụ trong Danh mục món ăn (nhóm Phụ sáng / Phụ chiều)
+        window.DASHBOARD_DS_PHU = @Json.Serialize(new { sang = Model.DsPhuSang, chieu = Model.DsPhuChieu });
     </script>
     <script src="~/js/dashboard.js" asp-append-version="true"></script>
     <script src="~/js/dashboard-bang.js" asp-append-version="true"></script>
