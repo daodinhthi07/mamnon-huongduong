@@ -30,8 +30,19 @@ public static class VaiTro
     public const string HieuTruong = "HieuTruong";
     public const string QuanTri = "QuanTri";
 
+    /// <summary>Quản lý: xem/làm việc như Nhà bếp nhưng KHÔNG vào Bảng giá, Định mức gia vị,
+    /// Quy tắc nguyên liệu, Chi tiết thực đơn - Chi tiền chợ (xem policy <see cref="ChinhSach.KhongPhaiQuanLy"/>).</summary>
+    public const string QuanLy = "QuanLy";
+
     public static readonly IReadOnlyList<string> TatCa = new[]
     {
-        NhaBep, ThuKho, KeToan, HieuTruong, QuanTri
+        NhaBep, ThuKho, KeToan, HieuTruong, QuanTri, QuanLy
     };
+}
+
+/// <summary>Tên các policy phân quyền dùng chung.</summary>
+public static class ChinhSach
+{
+    /// <summary>Đã đăng nhập VÀ không mang vai trò Quản lý.</summary>
+    public const string KhongPhaiQuanLy = "KhongPhaiQuanLy";
 }
