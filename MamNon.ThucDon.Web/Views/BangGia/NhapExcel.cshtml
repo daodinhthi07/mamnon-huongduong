@@ -1,0 +1,110 @@
+@model NhapExcelVm
+@{
+    ViewData["Title"] = "Nhập bảng giá từ Excel";
+    var vn = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    string Nhan(string h) => h switch { "capnhat" => "Giữ & cập nhật", "them" => "Thêm mới", "khongdoi" => "Không đổi", _ => "Bỏ qua" };
+}
+
+<h1>Upload bảng giá từ Excel (có xem trước)</h1>
+<p>Muốn upload nhanh, dùng nút <strong>Upload file bảng giá (Excel)</strong> ngay trên trang <a asp-controller="BangGia" asp-action="Index">Bảng giá</a>.</p>
+<div asp-validation-summary="All" class="alert-danger"></div>
+
+<div class="card">
+    <h2>Bước 1: Chọn file</h2>
+    <p>File .xlsx có các cột <strong>TÊN HÀNG</strong>, <strong>ĐVT</strong>, <strong>GIÁ BÁN</strong> và <strong>Ghi chú</strong> (cột Mã tuỳ chọn, đặt ngay trước TÊN HÀNG).
+       Dùng được luôn sheet "Bảng giá" trong file mẫu (ghi chú là cột ngay sau GIÁ BÁN), hoặc bấm <a asp-controller="BangGia" asp-action="TaiXuong">Tải bảng giá (Excel)</a>, sửa rồi nhập lại.</p>
+    <p class="text-danger"><strong>Khi áp dụng, toàn bộ bảng giá hiện tại bị xóa và nạp lại từ file này.</strong>
+       Mặt hàng không có trong file sẽ bị xóa; riêng mặt hàng đang được dùng trong công thức món / định mức / phiếu kho thì được giữ lại (để không hỏng thực đơn cũ) nhưng chuyển sang "Ngưng dùng" và bị xóa giá, ghi chú.
+       Mặt hàng có trong file được khớp theo <strong>tên</strong> nên công thức món vẫn trỏ đúng.</p>
+    <form method="post" asp-controller="BangGia" asp-action="NhapExcel" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div class="form-group">
+            <input type="file" name="file" accept=".xlsx" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Xem trước</button>
+        <a class="btn btn-secondary" asp-controller="BangGia" asp-action="Index">Quay lại bảng giá</a>
+    </form>
+</div>
+
+@if (Model.CoXemTruoc)
+{
+    var soGhi = Model.SoCapNhat + Model.SoKhongDoi + Model.SoThem;
+    <div class="card">
+        <h2>Bước 2: Xem trước — @Model.TenFile</h2>
+        <p>
+            Sẽ nạp <strong>@soGhi</strong> mặt hàng từ file:
+            <strong>@(Model.SoCapNhat + Model.SoKhongDoi)</strong> mặt hàng đã có (@Model.SoCapNhat có thay đổi) ·
+            <strong>@Model.SoThem</strong> thêm mới ·
+            @Model.SoBo dòng bỏ qua.<br />
+            Không có trong file: <strong class="text-danger">@Model.SeXoa.Count</strong> mặt hàng sẽ bị XÓA ·
+            <strong>@Model.SeGiu.Count</strong> mặt hàng đang dùng trong công thức sẽ được giữ lại ở trạng thái "Ngưng dùng", không giá.
+            Chưa có gì được lưu cho tới khi bạn bấm "Áp dụng".
+        </p>
+
+        @if (Model.CanhBao.Count > 0)
+        {
+            <details>
+                <summary>@Model.CanhBao.Count cảnh báo khi đọc file</summary>
+                <ul>
+                    @foreach (var c in Model.CanhBao.Take(100))
+                    {
+                        <li>@c</li>
+                    }
+                </ul>
+            </details>
+        }
+        @if (Model.SeXoa.Count > 0)
+        {
+            <details>
+                <summary>@Model.SeXoa.Count mặt hàng sẽ bị xóa (không có trong file, không dùng ở đâu)</summary>
+                <ul>@foreach (var x in Model.SeXoa.Take(300)) { <li>@x</li> }</ul>
+                @if (Model.SeXoa.Count > 300) { <p>... và @(Model.SeXoa.Count - 300) mặt hàng khác.</p> }
+            </details>
+        }
+        @if (Model.SeGiu.Count > 0)
+        {
+            <details>
+                <summary>@Model.SeGiu.Count mặt hàng đang dùng nhưng không có trong file (giữ lại, chuyển sang Ngưng dùng)</summary>
+                <ul>@foreach (var x in Model.SeGiu.Take(300)) { <li>@x</li> }</ul>
+                @if (Model.SeGiu.Count > 300) { <p>... và @(Model.SeGiu.Count - 300) mặt hàng khác.</p> }
+            </details>
+        }
+
+        @if (Model.SoCapNhat + Model.SoThem + Model.SoKhongDoi > 0)
+        {
+            <form method="post" asp-controller="BangGia" asp-action="ApDungNhap">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="duLieuJson" value="@Model.DuLieuJson" />
+                <div class="form-group">
+                    <label><input type="checkbox" name="xacNhan" value="true" required /> Tôi hiểu: <strong>xóa toàn bộ bảng giá hiện tại</strong> và nạp lại từ file này.</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Áp dụng — xóa hết &amp; nạp lại (@soGhi mặt hàng)</button>
+            </form>
+        }
+        else
+        {
+            <p class="text-danger">Không có dòng hợp lệ nào để nạp.</p>
+        }
+
+        <div class="tablewrap">
+        <table class="table">
+            <thead><tr><th>Dòng</th><th>Việc làm</th><th>Tên hàng</th><th>ĐVT</th><th style="text-align:right">Giá cũ</th><th style="text-align:right">Giá mới</th><th>Ghi chú (trong file)</th><th>Cảnh báo</th></tr></thead>
+            <tbody>
+                @foreach (var d in Model.Dong.Where(x => x.HanhDong != "khongdoi"))
+                {
+                    <tr>
+                        <td>@d.SoDong</td>
+                        <td>@Nhan(d.HanhDong)</td>
+                        <td>@d.TenHang</td>
+                        <td>@if (!string.IsNullOrEmpty(d.DvtCu) && !string.Equals(d.DvtCu, d.Dvt, StringComparison.OrdinalIgnoreCase)) { <span>@d.DvtCu → @d.Dvt</span> } else { @d.Dvt }</td>
+                        <td style="text-align:right">@(d.GiaCu is null ? "" : d.GiaCu.Value.ToString("N0", vn))</td>
+                        <td style="text-align:right">@d.GiaMoi.ToString("N0", vn)</td>
+                        <td>@d.Note</td>
+                        <td>@d.GhiChu</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    </div>
+}
