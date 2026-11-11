@@ -61,8 +61,8 @@
     // ---- bảng nguyên tuần (máy tính): CHỈ 1 khối đang chọn, mỗi ngày 1 cột ----
     function veBangTuan() {
         var hn = homNayIso();
-        var kh = khoiChon === 'nhaTre' ? 'nhaTre' : 'mauGiao';   // chế độ 'ca' ẩn bảng tuần
-        // luôn hiện đủ 5 dòng như file Excel của trường; ô chưa có món hiện "–"
+        var kh = khoiChon === 'nhaTre' ? 'nhaTre' : 'mauGiao';   // chế độ 'chitiet' ẩn bảng tuần (CSS .ph-ct)
+        // luôn hiện đủ 5 dòng như file Excel của trường; ô chưa có món thì để TRỐNG
         var cacBua = [['sang', 'BUỔI SÁNG'], ['phusang', 'PHỤ SÁNG'], ['trua', 'BUỔI TRƯA'], ['chieu', 'CHÍNH CHIỀU'], ['phuchieu', 'PHỤ CHIỀU']];
         var h = '<table class="ph-bang"><thead><tr><th class="ph-nhan"></th>';
         data.ngay.forEach(function (d, i) {
@@ -77,7 +77,7 @@
                 var td = ' d' + i + (d.ngay === hn ? ' homnay' : '');
                 if (d.nghi) { if (r === 0) h += '<td class="ph-nghi' + td + '" rowspan="' + cacBua.length + '">Nghỉ</td>'; return; }
                 var bua = d[kh].filter(function (x) { return x.ma === b[0]; })[0];
-                if (!bua) h += '<td class="ph-trong' + td + '">–</td>';
+                if (!bua) h += '<td class="ph-trong' + td + '"></td>';
                 else h += '<td class="' + td.trim() + '">' + bua.mon.map(function (m) { return dongMon(m); }).join('') + '</td>';
             });
             h += '</tr>';
@@ -108,7 +108,7 @@
     function khoiHtml(d, kh) {
         var ds = d[kh];
         if (d.nghi) return '<div class="ph-the-trong">Ngày nghỉ</div>';
-        if (!ds.length) return '<div class="ph-the-trong">Chưa có thực đơn.</div>';
+        if (!ds.length) return '';   // chưa có dữ liệu -> để trống
         return ds.map(function (b) {
             return '<div class="ph-the-bua"><h3>' + EMOJI_BUA[b.ma] + ' ' + esc(b.ten) + '</h3>' +
                 b.mon.map(function (m) { return dongMon(m); }).join('') + '</div>';
@@ -119,29 +119,48 @@
         var d = data.ngay[ngayChon];
         var box = el('ph-the-ngay');
         box.className = 'ph-the-ngay d' + ngayChon;
-        var ten = { nhaTre: 'Nhà trẻ', mauGiao: 'Mẫu giáo', ca: 'Nhà trẻ & Mẫu giáo' }[khoiChon];
-        var h = '<div class="ph-the-tieu-de">' + esc(d.thu) + '<small>' + esc(d.ngayNgan) + ' · ' + ten + '</small></div>';
-        if (khoiChon === 'ca') {
-            h += '<div class="ph-2khoi">' +
-                '<section class="ph-khoi-nt"><h2>🍼 Nhà trẻ</h2>' + khoiHtml(d, 'nhaTre') + '</section>' +
-                '<section class="ph-khoi-mg"><h2>🎒 Mẫu giáo</h2>' + khoiHtml(d, 'mauGiao') + '</section></div>';
-        } else {
-            h += khoiHtml(d, khoiChon);
+        if (khoiChon === 'chitiet') {
+            var ct = '<div class="ph-the-tieu-de">' + esc(d.thu) + '<small>' + esc(d.ngayNgan) + ' · Chi tiết nguyên liệu</small></div>';
+            if (d.nghi) ct += '<div class="ph-the-trong">Ngày nghỉ</div>';
+            else if (d.chiTiet && window.TongHopNgay) ct += '<section class="th-wrap" id="ph-ct"></section>';   // không có file chi tiết -> để trống
+            box.innerHTML = ct;
+            if (!d.nghi && d.chiTiet && window.TongHopNgay) {
+                window.TongHopNgay.render(el('ph-ct'), d.ngay, {
+                    data: d.chiTiet,
+                    trong: true,   // ô/bảng không có số liệu thì để trống, không hiện chữ "Chưa có..."
+                    ghiChu: 'Nguyên liệu, đơn giá và thành tiền trong ngày, theo từng cơ sở (' +
+                        (d.chiTiet.coSo || []).map(function (c) { return esc(c.ma || c.ten); }).join(', ') + ').'
+                });
+            }
+            return;
         }
+        var ten = { nhaTre: 'Nhà trẻ', mauGiao: 'Mẫu giáo' }[khoiChon];
+        var h = '<div class="ph-the-tieu-de">' + esc(d.thu) + '<small>' + esc(d.ngayNgan) + ' · ' + ten + '</small></div>';
+        h += khoiHtml(d, khoiChon);
         box.innerHTML = h;
     }
 
-    function capNhatCheDo() { app.classList.toggle('ph-ca', khoiChon === 'ca'); }
+    // Chế độ "Chi tiết": ẩn hẳn bảng tuần và hiện khu từng ngày (trên máy tính CSS đang ẩn khu này) — làm bằng style trực tiếp nên không phụ thuộc CSS cũ còn trong cache.
+    function capNhatCheDo() {
+        var ct = khoiChon === 'chitiet';
+        app.classList.toggle('ph-ct', ct);
+        el('ph-may-tinh').style.display = ct ? 'none' : '';
+        el('ph-dien-thoai').style.display = ct ? 'block' : '';
+    }
 
     function ve() {
         if (!data || !data.coDuLieu) {
             el('ph-thong-bao').hidden = false;
             el('ph-thong-bao').textContent = 'Nhà trường chưa công khai thực đơn. Phụ huynh vui lòng quay lại sau.';
-            el('ph-may-tinh').innerHTML = ''; el('ph-dien-thoai').hidden = true; el('ph-chon-khoi').hidden = true;
+            el('ph-may-tinh').innerHTML = ''; el('ph-may-tinh').style.display = 'none'; el('ph-dien-thoai').style.display = 'none'; el('ph-chon-khoi').hidden = true;
             el('ph-dieu-huong').hidden = true;
             return;
         }
-        el('ph-thong-bao').hidden = true; el('ph-dien-thoai').hidden = false; el('ph-chon-khoi').hidden = false; el('ph-dieu-huong').hidden = false;
+        el('ph-thong-bao').hidden = true; el('ph-chon-khoi').hidden = false; el('ph-dieu-huong').hidden = false;
+        // Nhà trường tắt tab "Chi tiết" (CongKhai:HienChiTiet = false) -> ẩn nút và quay về Mẫu giáo
+        var nutCt = el('ph-chon-khoi').querySelector('[data-khoi="chitiet"]');
+        if (nutCt) nutCt.hidden = data.hienChiTiet === false;
+        if (data.hienChiTiet === false && khoiChon === 'chitiet') khoiChon = 'mauGiao';
         el('ph-tuan').textContent = data.tieuDe;
         el('ph-khoang').textContent = 'Từ ngày ' + data.tuNgay + ' đến ngày ' + data.denNgay;
         el('ph-cap-nhat').textContent = data.capNhat ? 'Cập nhật lúc ' + data.capNhat : '';
@@ -192,6 +211,7 @@
         else window.prompt('Chép link này:', link);
     });
 
-    try { var k = localStorage.getItem('ph-khoi'); if (k === 'nhaTre' || k === 'mauGiao' || k === 'ca') khoiChon = k; } catch (x) { }
+    // giá trị cũ 'ca' (tab Cả hai đã bỏ) không còn hợp lệ -> giữ mặc định
+    try { var k = localStorage.getItem('ph-khoi'); if (k === 'nhaTre' || k === 'mauGiao' || k === 'chitiet') khoiChon = k; } catch (x) { }
     tai('');
 })();

@@ -187,22 +187,19 @@
         var d = data[ngayChon];
         var box = el('ph-the-ngay');
         box.className = 'ph-the-ngay d' + ngayChon;
-        var ten = { nhaTre: 'Nhà trẻ', mauGiao: 'Mẫu giáo', ca: 'Nhà trẻ & Mẫu giáo' }[khoiChon];
+        var chiTiet = khoiChon === 'chitiet';
+        var ten = { nhaTre: 'Nhà trẻ', mauGiao: 'Mẫu giáo', chitiet: 'Chi tiết nguyên liệu & giá' }[khoiChon];
         var h = '<div class="ph-the-tieu-de">' + esc(d.thu) + '<small>' + esc(d.ngan) + ' · ' + ten + '</small></div>';
-        if (SUA && !d.nghi) {
-            (khoiChon === 'ca' ? ['nhaTre', 'mauGiao'] : [khoiChon]).forEach(function (k) {
-                h += '<button type="button" class="ph-the-ct" data-sua-ngay-bt="' + ngayChon + '" data-sua-khoi="' + k + '">✏️ Sửa món' + (khoiChon === 'ca' ? (k === 'nhaTre' ? ' Nhà trẻ' : ' Mẫu giáo') : '') + '</button>';
-            });
+        if (SUA && !d.nghi && !chiTiet) {
+            h += '<button type="button" class="ph-the-ct" data-sua-ngay-bt="' + ngayChon + '" data-sua-khoi="' + khoiChon + '">✏️ Sửa món</button>';
         }
         if (!window.khongMoChiTiet) h += '<button type="button" class="ph-the-ct" data-mo-ngay-bt="' + d.iso + '">Xem chi tiết ngày này →</button>';
-        if (khoiChon === 'ca') {
-            h += '<div class="ph-2khoi">' +
-                '<section class="ph-khoi-nt"><h2>🍼 Nhà trẻ</h2>' + khoiHtml(d, 'nhaTre') + '</section>' +
-                '<section class="ph-khoi-mg"><h2>🎒 Mẫu giáo</h2>' + khoiHtml(d, 'mauGiao') + '</section></div>';
-        } else {
-            h += khoiHtml(d, khoiChon);
-        }
+        // Tab "Chi tiết": bảng nguyên liệu & giá như file mẫu (bên trong có tab Ăn sáng / Ăn trưa) — xem tong-hop-ngay.js.
+        var coBang = chiTiet && !d.nghi && !!window.TongHopNgay;
+        if (chiTiet) h += d.nghi ? '<div class="ph-the-trong">Ngày nghỉ</div>' : '<section class="th-wrap" id="th-wrap"></section>';
+        else h += khoiHtml(d, khoiChon);
         box.innerHTML = h;
+        if (coBang) window.TongHopNgay.render(document.getElementById('th-wrap'), d.iso);
     }
 
     function docPhu() {
@@ -223,7 +220,7 @@
         var kho = document.getElementById('dashboard-du-lieu');
         var macDinh = kho ? (kho.getAttribute('data-phu-chieu-mac-dinh') || '').trim() : '';
         data = xayDuLieu(docCacO(), tuan, chk && chk.checked, docPhu(), macDinh);
-        goc.classList.toggle('ph-ca', khoiChon === 'ca');
+        goc.classList.toggle('ph-ca', khoiChon === 'chitiet');   // tab Chi tiết: ẩn bảng tuần, hiện chọn ngày + thẻ ngày
         veBangTuan(); veChonNgay(); veTheNgay();
     }
     window.dashboardLamMoiBang = ve;
@@ -345,7 +342,7 @@
         if (typeof window.dashboardMoChiTiet === 'function') window.dashboardMoChiTiet(t.getAttribute('data-mo-ngay-bt'));
     });
 
-    try { var k = localStorage.getItem('bt-khoi'); if (k === 'nhaTre' || k === 'mauGiao' || k === 'ca') khoiChon = k; } catch (x) { }
+    try { var k = localStorage.getItem('bt-khoi'); if (k === 'ca') k = 'chitiet'; if (k === 'chitiet' && window.khongMoChiTiet) k = 'nhaTre'; if (k === 'nhaTre' || k === 'mauGiao' || k === 'chitiet') khoiChon = k; } catch (x) { }
     ve();
     chonNgayMacDinh();
     veChonNgay(); veTheNgay();
