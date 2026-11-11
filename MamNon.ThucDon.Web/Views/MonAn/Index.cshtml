@@ -1,0 +1,116 @@
+@model List<MonAnRowVm>
+@{
+    ViewData["Title"] = "Quản lý món ăn";
+    var tuKhoa = ViewData["TuKhoa"] as string ?? string.Empty;
+    var tongSo = ViewData["TongSo"] is int t ? t : Model.Count;
+    var cacNhom = Model.Select(m => m.TenNhomBuaAn).Where(n => !string.IsNullOrEmpty(n)).Distinct().OrderBy(n => n).ToList();
+}
+
+<h1>Danh mục món ăn</h1>
+
+<form method="get" asp-controller="MonAn" asp-action="Index" class="ma-tim" id="ma-form-tim">
+    <div class="form-group">
+        <label for="ma-q">Tìm món (gõ tên món, không cần dấu)</label>
+        <input type="search" id="ma-q" name="q" class="form-control" value="@tuKhoa" placeholder="VD: canh bi dao, pho ga, banh mi..." autocomplete="off" autofocus />
+    </div>
+    <div class="form-group">
+        <label for="ma-nhom">Loại món</label>
+        <select id="ma-nhom" class="form-control">
+            <option value="">Tất cả</option>
+            @foreach (var n in cacNhom)
+            {
+                <option value="@n">@n</option>
+            }
+        </select>
+    </div>
+    <div class="form-group ma-tim-check">
+        <label><input type="checkbox" id="ma-thieu" /> Chỉ món chưa có công thức</label>
+        <label><input type="checkbox" id="ma-an" /> Hiện cả món đã ẩn</label>
+    </div>
+    <button type="submit" class="btn btn-secondary">Tìm</button>
+    <a class="btn btn-primary" asp-controller="MonAn" asp-action="Create">+ Thêm món mới</a>
+</form>
+
+<p class="ma-dem">Đang hiện <strong id="ma-dem">@Model.Count</strong> / @tongSo món<span id="ma-khong" style="display:none"> — không có món nào khớp.</span></p>
+
+<table class="table" id="ma-bang">
+    <thead><tr><th>Tên món</th><th>Loại món</th><th>Số nguyên liệu đã khai báo</th><th>Ghi chú</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var m in Model)
+        {
+            <tr data-ten="@m.TenMon" data-nhom="@m.TenNhomBuaAn" data-ghichu="@m.GhiChu" data-thieu="@(m.SoNguyenLieu == 0 ? "1" : "0")" data-an="@(m.IsActive ? "0" : "1")">
+                <td><a asp-controller="MonAn" asp-action="Edit" asp-route-id="@m.Id">@m.TenMon</a></td>
+                <td>
+                    @if (m.TenNhomBuaAn is null)
+                    {
+                        <span class="text-danger">Chưa gán</span>
+                    }
+                    else
+                    {
+                        @m.TenNhomBuaAn
+                    }
+                </td>
+                <td>
+                    @if (m.SoNguyenLieu == 0)
+                    {
+                        <span class="text-danger">Chưa có công thức</span>
+                    }
+                    else
+                    {
+                        @m.SoNguyenLieu
+                    }
+                </td>
+                <td>@m.GhiChu</td>
+                <td>@(m.IsActive ? "Đang dùng" : "Đã ẩn")</td>
+                <td>
+                    <a asp-controller="MonAn" asp-action="Edit" asp-route-id="@m.Id">Sửa công thức</a>
+                    &nbsp;|&nbsp;
+                    <form method="post" asp-controller="MonAn" asp-action="ToggleActive" asp-route-id="@m.Id" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-link">@(m.IsActive ? "Ẩn" : "Bỏ ẩn")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    (function () {
+        // Lọc tức thì ngay khi gõ — không cần tải lại trang; không phân biệt hoa/thường và dấu tiếng Việt.
+        function boDau(s) {
+            return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+        }
+        var o = document.getElementById('ma-q');
+        var nhom = document.getElementById('ma-nhom');
+        var thieu = document.getElementById('ma-thieu');
+        var an = document.getElementById('ma-an');
+        var dem = document.getElementById('ma-dem');
+        var khong = document.getElementById('ma-khong');
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#ma-bang tbody tr'));
+        rows.forEach(function (r) { r._k = boDau(r.getAttribute('data-ten') + ' ' + (r.getAttribute('data-nhom') || '') + ' ' + (r.getAttribute('data-ghichu') || '')); });
+
+        function loc() {
+            var k = boDau(o.value);
+            var tu = k.split(/\s+/).filter(Boolean);        // mỗi từ gõ vào đều phải có trong tên món
+            var nh = nhom.value;
+            var n = 0;
+            rows.forEach(function (r) {
+                var ok = tu.every(function (t) { return r._k.indexOf(t) !== -1; });
+                if (ok && nh && r.getAttribute('data-nhom') !== nh) ok = false;
+                if (ok && thieu.checked && r.getAttribute('data-thieu') !== '1') ok = false;
+                if (ok && !an.checked && r.getAttribute('data-an') === '1' && !k) ok = false;
+                r.style.display = ok ? '' : 'none';
+                if (ok) n++;
+            });
+            dem.textContent = n;
+            khong.style.display = n === 0 ? '' : 'none';
+        }
+        o.addEventListener('input', loc);
+        nhom.addEventListener('change', loc);
+        thieu.addEventListener('change', loc);
+        an.addEventListener('change', loc);
+        document.getElementById('ma-form-tim').addEventListener('submit', function (e) { e.preventDefault(); loc(); });
+        loc();
+    })();
+</script>

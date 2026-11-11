@@ -1,0 +1,187 @@
+@model MonAnFormVm
+@{
+    ViewData["Title"] = Model.Id is null ? "Thêm món mới" : "Sửa công thức món ăn";
+    var dangSua = Model.Id is not null;
+    // 1 thẻ <form> DUY NHẤT, action tính động theo Create/Edit — tránh kiểu mở thẻ
+    // trong nhánh if/else rồi đóng ở ngoài (Razor không hỗ trợ, gây lỗi RZ1006/RZ1025).
+    var actionUrl = dangSua
+        ? Url.Action("Edit", "MonAn", new { id = Model.Id })
+        : Url.Action("Create", "MonAn");
+}
+
+<h1>@(dangSua ? $"Sửa công thức: {Model.TenMon}" : "Thêm món mới")</h1>
+<div asp-validation-summary="All" class="alert-danger"></div>
+
+<form method="post" action="@actionUrl" id="form-mon-an">
+    @Html.AntiForgeryToken()
+    @if (dangSua)
+    {
+        <input type="hidden" name="SoSuatThamChieu" value="1" />
+        var laTc = string.Equals(Model.MaCoSo, "TC", StringComparison.OrdinalIgnoreCase);
+        <div class="form-group">
+            <label for="chon-co-so"><strong>Cơ sở</strong></label>
+            <select name="MaCoSo" id="chon-co-so" class="form-control" style="max-width:220px" data-url="@Url.Action("Edit", "MonAn", new { id = Model.Id })">
+                @foreach (var ma in Model.DsMaCoSo)
+                {
+                    <option value="@ma" selected="@(string.Equals(ma, Model.MaCoSo, StringComparison.OrdinalIgnoreCase))">@(string.Equals(ma, "TC", StringComparison.OrdinalIgnoreCase) ? "TC (chuẩn)" : ma)</option>
+                }
+            </select>
+            <small>Mặc định là TC = công thức chuẩn (bảng chung). Chọn PH hoặc ĐT để xem và sửa công thức riêng của chợ đó.
+                Đổi cơ sở sẽ tải lại công thức của cơ sở đó.</small>
+        </div>
+        @if (Model.MonChuan)
+        {
+            <div class="alert alert-warning">
+                Món này đang có ghi chú <strong>"Món ăn nguyên liệu chuẩn"</strong> — mặc định KHÔNG sửa. Muốn sửa thì tick ô xác nhận ở cuối form.
+            </div>
+        }
+        @if (!laTc)
+        {
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="DungCongThucChung" value="true" checked="@Model.DungCongThucChung" />
+                    Cơ sở @Model.MaCoSo dùng công thức chung (TC) — không có công thức riêng
+                </label>
+                <input type="hidden" name="DungCongThucChung" value="false" />
+                <small>
+                    @if (Model.CoCongThucRieng)
+                    {
+                        <text>@Model.MaCoSo đang có công thức RIÊNG. Tick ô trên rồi Lưu để bỏ công thức riêng, quay về dùng công thức chung (TC).</text>
+                    }
+                    else
+                    {
+                        <text>@Model.MaCoSo hiện đang dùng công thức chung (TC). Bỏ tick ô trên rồi sửa bảng bên dưới để tạo công thức RIÊNG cho @Model.MaCoSo.</text>
+                    }
+                </small>
+            </div>
+        }
+    }
+    <div class="form-group">
+        <label>Tên món</label>
+        <input type="text" name="TenMon" class="form-control" value="@Model.TenMon" required />
+    </div>
+    <div class="form-group">
+        <label>Loại món (bữa)</label>
+        <select name="NhomBuaAnId" class="form-control" required style="max-width:250px">
+            <option value="">-- Chọn loại món --</option>
+            @foreach (var nb in Model.DsNhomBuaAn)
+            {
+                <option value="@nb.Id" selected="@(nb.Id == Model.NhomBuaAnId)">@nb.TenNhom</option>
+            }
+        </select>
+        <small>Quyết định món này sẽ hiện ở dòng bữa nào khi soạn thực đơn (VD: món "Canh" chỉ hiện ở dòng CANH).</small>
+    </div>
+    <div class="form-group">
+        <label>Ghi chú (tuỳ chọn)</label>
+        <input type="text" name="GhiChu" class="form-control" value="@Model.GhiChu" />
+    </div>
+
+    @if (!dangSua)
+    {
+        <div class="form-group">
+            <label>Nhập nguyên liệu cho bao nhiêu suất ăn?</label>
+            <input type="number" min="1" name="SoSuatThamChieu" id="soSuatThamChieu" class="form-control" value="@Model.SoSuatThamChieu" style="max-width:150px" />
+            <small>VD: hôm nay nấu cho 280 cháu hết 7kg Bột bán → nhập "280" ở đây, "7" ở dòng Bột bán bên dưới.
+                Hệ thống tự quy đổi ra định lượng/suất = 7 ÷ 280, dùng để tính cho MỌI số cháu sau này.</small>
+        </div>
+    }
+
+    <h2>Nguyên liệu</h2>
+    <div id="canh-bao-trung" class="alert alert-warning" role="alert" style="display:none"></div>
+    <table class="table" id="bang-dong">
+        <thead><tr><th>Thực phẩm</th><th>@(dangSua ? "Định lượng/suất (Mẫu giáo / ăn sáng)" : "Số lượng (cho số suất ở trên)")</th>@if (dangSua) {<th>Nhà trẻ (trống = giống Mẫu giáo)</th>}<th></th></tr></thead>
+        <tbody id="bang-dong-body">
+            @for (var i = 0; i < Model.CacDong.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <select name="CacDong[@i].HangHoaId" class="form-control" data-tim-mon>
+                            <option value="">-- Gõ để tìm thực phẩm --</option>
+                            @foreach (var hh in Model.DsHangHoa)
+                            {
+                                <option value="@hh.Id" selected="@(hh.Id == Model.CacDong[i].HangHoaId)">@hh.TenHang (@hh.Dvt?.TenDvt)</option>
+                            }
+                        </select>
+                    </td>
+                    <td><input type="number" step="any" min="0" name="CacDong[@i].SoLuong" class="form-control" value="@Model.CacDong[i].SoLuong" /></td>
+                    @if (dangSua)
+                    {
+                        <td><input type="number" step="any" min="0" name="CacDong[@i].SoLuongNhaTre" class="form-control" value="@Model.CacDong[i].SoLuongNhaTre" /></td>
+                    }
+                    <td><button type="button" class="btn btn-link xoa-dong">Xóa</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (dangSua)
+    {
+        <div class="form-group">
+            <label><strong>Áp dụng công thức này cho cơ sở khác</strong></label><br />
+            @foreach (var ma in Model.DsMaCoSo.Where(x => !string.Equals(x, Model.MaCoSo, StringComparison.OrdinalIgnoreCase)))
+            {
+                <label style="margin-right:18px"><input type="checkbox" name="ApDungChoCoSo" value="@ma" /> @ma</label>
+            }
+            <br />
+            <small>Tick cơ sở nào thì khi bấm Lưu, NGUYÊN công thức đang hiển thị (cả cột Nhà trẻ) được sao chép sang cơ sở đó và thay thế công thức hiện có của nó
+                (TC = công thức chuẩn/bảng chung; PH, ĐT = công thức riêng). Không tick = chỉ lưu cho cơ sở đang chọn.</small>
+        </div>
+        @if (Model.MonChuan)
+        {
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="XacNhanSuaMonChuan" value="true" />
+                    Tôi xác nhận muốn sửa món đang có ghi chú "Món ăn nguyên liệu chuẩn"
+                </label>
+                <input type="hidden" name="XacNhanSuaMonChuan" value="false" />
+            </div>
+        }
+    }
+
+    <div class="soan-thucdon-actions">
+        <button type="button" class="btn btn-secondary" id="them-dong">+ Thêm nguyên liệu</button>
+        <button type="submit" class="btn btn-primary">Lưu công thức</button>
+        <a class="btn btn-secondary" asp-controller="MonAn" asp-action="Index">Quay lại</a>
+    </div>
+</form>
+
+<template id="mau-dong">
+    <tr>
+        <td>
+            <select name="CacDong[__IDX__].HangHoaId" class="form-control" data-tim-mon>
+                <option value="">-- Gõ để tìm thực phẩm --</option>
+                @foreach (var hh in Model.DsHangHoa)
+                {
+                    <option value="@hh.Id">@hh.TenHang (@hh.Dvt?.TenDvt)</option>
+                }
+            </select>
+        </td>
+        <td><input type="number" step="any" min="0" name="CacDong[__IDX__].SoLuong" class="form-control" value="0" /></td>
+        @if (dangSua)
+        {
+            <td><input type="number" step="any" min="0" name="CacDong[__IDX__].SoLuongNhaTre" class="form-control" value="" /></td>
+        }
+        <td><button type="button" class="btn btn-link xoa-dong">Xóa</button></td>
+    </tr>
+</template>
+
+@section Scripts {
+    <script src="~/js/mon-an-form.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            'use strict';
+            // Đổi cơ sở = tải lại trang với công thức của cơ sở đó (nhắc nếu đang có chỉnh sửa chưa lưu).
+            var sel = document.getElementById('chon-co-so');
+            var form = document.getElementById('form-mon-an');
+            if (!sel || !form) return;
+            var dirty = false, goc = sel.value;
+            form.addEventListener('input', function (e) { if (e.target !== sel) dirty = true; });
+            form.addEventListener('submit', function () { dirty = false; });
+            sel.addEventListener('change', function () {
+                if (dirty && !confirm('Bạn đã sửa nhưng chưa lưu. Đổi cơ sở sẽ bỏ các thay đổi này. Tiếp tục?')) { sel.value = goc; return; }
+                var url = sel.getAttribute('data-url') || '';
+                window.location.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'coSo=' + encodeURIComponent(sel.value);
+            });
+        })();
+    </script>
+}
