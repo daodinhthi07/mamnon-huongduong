@@ -1,0 +1,72 @@
+@model QuanLyNguoiDungViewModel
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+<h1>Quản lý người dùng</h1>
+
+<h2>Danh sách tài khoản</h2>
+<table class="table">
+    <thead><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Cơ sở</th><th>Vai trò</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var nd in Model.DsNguoiDung)
+        {
+            <tr>
+                <td>@nd.UserName</td>
+                <td>@nd.HoTen</td>
+                <td>@(nd.TenCoSo ?? "(Tất cả cơ sở)")</td>
+                <td>@string.Join(", ", nd.VaiTros)</td>
+                <td>@(nd.IsActive ? "Đang hoạt động" : "Đã khóa")</td>
+                <td>
+                    <form method="post" asp-controller="NguoiDung" asp-action="ToggleActive" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@nd.Id" />
+                        <button type="submit" class="btn btn-link">@(nd.IsActive ? "Khóa" : "Mở khóa")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Tạo tài khoản mới</h2>
+<div asp-validation-summary="All" class="alert-danger"></div>
+<form asp-controller="NguoiDung" asp-action="Tao" method="post">
+    @Html.AntiForgeryToken()
+    <div class="soan-thucdon-header">
+        <div class="form-group">
+            <label>Tên đăng nhập</label>
+            <input type="text" name="TenDangNhap" class="form-control" value="@Model.NguoiDungMoi.TenDangNhap" />
+        </div>
+        <div class="form-group">
+            <label>Họ tên</label>
+            <input type="text" name="HoTen" class="form-control" value="@Model.NguoiDungMoi.HoTen" />
+        </div>
+        <div class="form-group">
+            <label>Cơ sở (bỏ trống nếu quản lý chung)</label>
+            <select name="CoSoId" class="form-control">
+                <option value="">-- Tất cả cơ sở --</option>
+                @foreach (var cs in Model.DsCoSo)
+                {
+                    <option value="@cs.Id">@cs.TenCoSo</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Vai trò</label>
+            <select name="VaiTro" class="form-control">
+                <option value="@VaiTro.NhaBep">Nhà bếp</option>
+                <option value="@VaiTro.ThuKho">Thủ kho</option>
+                <option value="@VaiTro.KeToan">Kế toán</option>
+                <option value="@VaiTro.HieuTruong">Hiệu trưởng</option>
+                <option value="@VaiTro.QuanTri">Quản trị</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Mật khẩu tạm thời</label>
+            <input type="text" name="MatKhau" class="form-control" placeholder="Tối thiểu 8 ký tự" />
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
+</form>
