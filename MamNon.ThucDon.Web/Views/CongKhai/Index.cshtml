@@ -1,0 +1,121 @@
+@model MamNon.ThucDon.Web.Services.CongKhaiIndexVm
+@{
+    ViewData["Title"] = "Công khai thực đơn";
+    var tuanStr = Model.Tuan.ToString("yyyy-MM-dd");
+    var linkPh = Url.Content("~/thuc-don-phu-huynh");
+    var thuBay = Model.Tuan.AddDays(5);
+}
+
+<h1>Công khai thực đơn cho phụ huynh</h1>
+<p class="ls-ghi-chu">Phụ huynh xem thực đơn tại một đường link cố định, <strong>không cần đăng nhập</strong>, chỉ thấy tên món theo từng bữa.
+    Tiền chợ, định lượng, nguyên liệu và xuất kho <strong>không</strong> được công khai.
+    Thực đơn dùng chung cho cả trường (lấy từ Trang chủ).</p>
+
+<form method="get" class="soan-thucdon-actions" style="margin-bottom:12px">
+    <label>Tuần (Thứ 2 đầu tuần)
+        <input type="date" name="tuan" value="@tuanStr" class="form-control" style="display:inline-block;width:auto" />
+    </label>
+    <button type="submit" class="btn btn-secondary">Xem</button>
+</form>
+
+<h2>@Model.TieuDe · @Model.Tuan.ToString("dd/MM/yyyy") – @thuBay.ToString("dd/MM/yyyy")</h2>
+
+<table class="table" style="max-width:560px">
+    <tr><th>Thực đơn Nhà trẻ</th><td>@(Model.SoMonNhaTre > 0 ? $"Đã có ({Model.SoMonNhaTre} món)" : "Chưa có")</td></tr>
+    <tr><th>Thực đơn Mẫu giáo</th><td>@(Model.SoMonMauGiao > 0 ? $"Đã có ({Model.SoMonMauGiao} món)" : "Chưa có")</td></tr>
+    <tr><th>Trạng thái duyệt nội bộ</th><td>@Model.TrangThaiNoiBo</td></tr>
+    <tr><th>Công khai</th>
+        <td>
+            @if (Model.DaCongKhai is { DangCongKhai: true } ck)
+            {
+                <span>Đã công khai · phiên bản @ck.PhienBan · @ck.CongKhaiLuc.ToLocalTime().ToString("HH:mm dd/MM/yyyy")@(string.IsNullOrWhiteSpace(ck.NguoiCongKhai) ? "" : " · " + ck.NguoiCongKhai)</span>
+            }
+            else if (Model.DaCongKhai is not null)
+            {
+                <span>Đã gỡ công khai</span>
+            }
+            else
+            {
+                <span>Chưa công khai</span>
+            }
+        </td></tr>
+</table>
+
+@if (!Model.DaDuyetNoiBo && Model.SoMonNhaTre + Model.SoMonMauGiao > 0)
+{
+    <p class="ls-ghi-chu" style="color:var(--red)">Lưu ý: thực đơn tuần này chưa ở trạng thái "Đã duyệt". Hãy kiểm tra kỹ trước khi công khai.</p>
+}
+
+<h2>Phụ sáng &amp; Phụ chiều</h2>
+<p class="ls-ghi-chu">Hai bữa phụ không nằm trong lưới soạn thực đơn nên nhập ở đây (áp dụng cho cả Nhà trẻ và Mẫu giáo). Có thể để trống nếu hôm đó không có.
+    Khi nhập thực đơn từ file Excel, hai dòng này được điền tự động.</p>
+<datalist id="goi-y-phu"><option value="Sữa chua"></option><option value="Yakult"></option><option value="Sữa Ellac Family"></option></datalist>
+<form method="post" asp-action="LuuPhu">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="tuan" value="@tuanStr" />
+    <table class="table" style="max-width:640px">
+        <thead><tr><th>Ngày</th><th>Phụ sáng</th><th>Phụ chiều</th></tr></thead>
+        <tbody>
+        @{ string[] tenThu = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7" }; }
+        @for (var i = 0; i < 6; i++)
+        {
+            var p = i < Model.Phu.Count ? Model.Phu[i] : ("", "");
+            <tr>
+                <td>@tenThu[i] · @Model.Tuan.AddDays(i).ToString("dd/MM")</td>
+                <td><input type="text" name="sang" list="goi-y-phu" class="form-control" value="@p.Item1" /></td>
+                <td><input type="text" name="chieu" list="goi-y-phu" class="form-control" value="@p.Item2" placeholder="Sữa Ellac Family" /></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-secondary">Lưu phụ sáng / phụ chiều</button>
+</form>
+
+<div class="soan-thucdon-actions" style="margin-top:16px">
+    <a class="btn btn-secondary" target="_blank" rel="noopener" href="@Url.Content("~/thuc-don-phu-huynh")?xemTruoc=@tuanStr">Xem trước (giao diện phụ huynh)</a>
+    <form method="post" asp-action="CongKhai" style="display:inline" onsubmit="return confirm('@(Model.DaCongKhai is { DangCongKhai: true } ? "Cập nhật bản công khai của tuần này theo thực đơn hiện tại?" : "Công khai thực đơn tuần này cho phụ huynh?")')">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tuan" value="@tuanStr" />
+        <button type="submit" class="btn btn-primary">@(Model.DaCongKhai is { DangCongKhai: true } ? "Cập nhật công khai" : "Công khai")</button>
+    </form>
+    @if (Model.DaCongKhai is { DangCongKhai: true })
+    {
+        <form method="post" asp-action="Go" style="display:inline" onsubmit="return confirm('Gỡ công khai tuần này? Phụ huynh sẽ không còn thấy tuần này.')">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tuan" value="@tuanStr" />
+            <button type="submit" class="btn btn-secondary">Gỡ công khai</button>
+        </form>
+    }
+</div>
+
+<h2>Link gửi phụ huynh</h2>
+<p><input type="text" readonly class="form-control" style="max-width:560px" id="link-ph" value="" />
+   <button type="button" class="btn btn-secondary" onclick="var i=document.getElementById('link-ph'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : document.execCommand('copy')); this.textContent='Đã chép';">Chép link</button></p>
+<script>document.getElementById('link-ph').value = location.origin + '@linkPh';</script>
+
+<h2>Các tuần đã công khai</h2>
+@if (Model.LichSu.Count == 0)
+{
+    <p class="ls-ghi-chu">Chưa có tuần nào được công khai.</p>
+}
+else
+{
+    <table class="table">
+        <thead><tr><th>Tuần</th><th>Từ ngày – đến ngày</th><th>Phiên bản</th><th>Công khai lúc</th><th>Người công khai</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+        @for (var i = 0; i < Model.LichSu.Count; i++)
+        {
+            var x = Model.LichSu[i];
+            <tr>
+                <td>@Model.TieuDeLichSu[i].TieuDe</td>
+                <td>@x.TuanBatDau.ToString("dd/MM") – @x.TuanBatDau.AddDays(5).ToString("dd/MM/yyyy")</td>
+                <td>@x.PhienBan</td>
+                <td>@x.CongKhaiLuc.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</td>
+                <td>@x.NguoiCongKhai</td>
+                <td>@(x.DangCongKhai ? "Đang công khai" : "Đã gỡ")</td>
+                <td><a href="?tuan=@x.TuanBatDau.ToString("yyyy-MM-dd")">Mở</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
