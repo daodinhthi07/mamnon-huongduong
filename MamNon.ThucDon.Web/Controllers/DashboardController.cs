@@ -37,7 +37,7 @@ public sealed class DashboardController : Controller
         _congKhai = congKhai;
     }
 
-    private const string VaiTroDuocSua = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri}";
+    private const string VaiTroDuocSua = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}";
 
     /// <summary>Địa chỉ cũ /dashboard -> chuyển về Trang chủ "/".</summary>
     [HttpGet("")]
@@ -109,6 +109,8 @@ public sealed class DashboardController : Controller
             vm.PhuChieu[i] = p.Chieu;
         }
         vm.PhuChieuMacDinh = _congKhai.PhuChieuMacDinh;
+        vm.DsPhuSang = await _db.MonAns.AsNoTracking().Where(m => m.IsActive && m.NhomBuaAn != null && m.NhomBuaAn.TenNhom == "Phụ sáng").OrderBy(m => m.TenMon).Select(m => m.TenMon).ToListAsync();
+        vm.DsPhuChieu = await _db.MonAns.AsNoTracking().Where(m => m.IsActive && m.NhomBuaAn != null && m.NhomBuaAn.TenNhom == "Phụ chiều").OrderBy(m => m.TenMon).Select(m => m.TenMon).ToListAsync();
 
         var idDangDung = vm.CacKhoi.SelectMany(k => k.CacBua).SelectMany(b => b.MonTheoNgay).Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToList();
         if (idDangDung.Count > 0)
@@ -148,8 +150,21 @@ public sealed class DashboardController : Controller
     [HttpPost("luu")]
     [Authorize(Roles = VaiTroDuocSua)]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Luu(DateOnly tuanBatDau, string luoiJson, bool guiDuyet, bool xuatExcel = false, string? moChiTietNgay = null)
+    public async Task<IActionResult> Luu(DateOnly tuanBatDau, string luoiJson, bool guiDuyet, bool xuatExcel = false, string? moChiTietNgay = null,
+        bool congKhai = false, string? cacNgay = null, string? phuJson = null)
     {
+        // Vai trò Quản lý không được vào Chi tiết - Chi tiền chợ / bảng kê chợ -> bỏ 2 hành động đó nếu bị gọi trực tiếp.
+        if (User.IsInRole(VaiTro.QuanLy)) { xuatExcel = false; moChiTietNgay = null; }
+
+        // cacNgay: "0,2,3" (0 = Thứ 2 ... 5 = Thứ 7). Rỗng = cả tuần. Có giá trị = CHỈ lưu (và công khai) các ngày đó.
+        HashSet<int>? ngayChon = null;
+        if (!string.IsNullOrWhiteSpace(cacNgay))
+        {
+            ngayChon = cacNgay.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var n) ? n : -1).Where(n => n is >= 0 and <= 5).ToHashSet();
+            if (ngayChon.Count == 0 || ngayChon.Count == 6) ngayChon = null;
+        }
+
         // luoiJson: { "khoiId": { "0": {"buaId": monAnId|null, ...}, ..., "5": {...} }, "khoiId2": {...} }
         var luoi = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, Dictionary<string, int?>>>>(luoiJson) ?? new();
         var nguoiDung = await _userManager.GetUserAsync(User);
@@ -166,6 +181,7 @@ public sealed class DashboardController : Controller
 
             for (var i = 0; i < 6; i++)
             {
+                if (ngayChon is not null && !ngayChon.Contains(i)) continue;
                 if (!monTheoNgay.TryGetValue(i.ToString(), out var monTrongNgay)) continue;
                 var ngay = tuanBatDau.AddDays(i);
 
@@ -230,6 +246,32 @@ public sealed class DashboardController : Controller
             return RedirectToAction(nameof(Index), new { tuanBatDau });
         }
 
+        // Phụ sáng / Phụ chiều đã sửa trên Trang chủ (chỉ các ngày bị đổi, và nằm trong phạm vi lưu) — ghi TRƯỚC khi công khai.
+        if (!string.IsNullOrWhiteSpace(phuJson))
+        {
+            try
+            {
+                var phuMoi = JsonSerializer.Deserialize<Dictionary<string, PhuNgayDto>>(phuJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                var theoNgay = new Dictionary<int, (string, string)>();
+                foreach (var (k, v) in phuMoi)
+                {
+                    if (!int.TryParse(k, out var i) || i < 0 || i > 5) continue;
+                    if (ngayChon is not null && !ngayChon.Contains(i)) continue;
+                    theoNgay[i] = (v.Sang ?? "", v.Chieu ?? "");
+                }
+                if (theoNgay.Count > 0) await _congKhai.LuuPhuTheoNgayAsync(tuanBatDau, theoNgay);
+            }
+            catch (JsonException) { /* dữ liệu phụ hỏng -> bỏ qua, món chính đã lưu */ }
+        }
+
+        // "Lưu & công khai": sau khi lưu thành công thì chụp thực đơn vừa lưu vào bản công khai (cả tuần hoặc chỉ các ngày đã chọn).
+        string? thongBaoCongKhai = null;
+        if (congKhai)
+        {
+            var (ok, msg) = await _congKhai.CongKhaiAsync(tuanBatDau, nguoiLap, ngayChon);
+            thongBaoCongKhai = ok ? msg : "Đã lưu thực đơn nhưng chưa công khai được: " + msg;
+        }
+
         // Nút "Xuất Excel": lưu lưới rồi xuất đúng như trang Lịch sử (bảng kê chợ cả tuần từ hệ thống).
         if (xuatExcel)
         {
@@ -250,7 +292,10 @@ public sealed class DashboardController : Controller
         if (!string.IsNullOrWhiteSpace(moChiTietNgay) && DateOnly.TryParse(moChiTietNgay, out var ngayMo))
             return RedirectToAction("Index", "ChiTietNgay", new { ngay = ngayMo.ToString("yyyy-MM-dd") });
 
-        TempData["ThongBao"] = guiDuyet ? "Đã gửi duyệt cả tuần (áp dụng cho mọi cơ sở)." : "Đã lưu nháp cả tuần (áp dụng cho mọi cơ sở).";
+        var phamViLuu = ngayChon is null ? "cả tuần" : $"từ {tuanBatDau.AddDays(ngayChon.Min()):dd/MM} đến hết {tuanBatDau.AddDays(ngayChon.Max()):dd/MM}";
+        TempData["ThongBao"] = thongBaoCongKhai is not null
+            ? $"Đã lưu thực đơn {phamViLuu} (áp dụng cho mọi cơ sở). " + thongBaoCongKhai
+            : guiDuyet ? "Đã gửi duyệt cả tuần (áp dụng cho mọi cơ sở)." : "Đã lưu nháp cả tuần (áp dụng cho mọi cơ sở).";
         return RedirectToAction(nameof(Index), new { tuanBatDau });
     }
 
@@ -302,3 +347,6 @@ public sealed class DashboardController : Controller
         return ngay.AddDays(-soNgayLuiVeThuHai);
     }
 }
+
+/// <summary>Phụ sáng / Phụ chiều của 1 ngày gửi từ Trang chủ.</summary>
+public sealed record PhuNgayDto(string? Sang, string? Chieu);

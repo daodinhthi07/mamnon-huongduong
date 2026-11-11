@@ -17,7 +17,7 @@ namespace MamNon.ThucDon.Web.Controllers;
 /// công cụ dò ngược từ file cũ (Tools/RecipeDatabase), không có cách nhập
 /// tay cho món hoàn toàn mới.
 /// </summary>
-[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri}")]
+[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}")]
 [Route("mon-an")]
 public sealed class MonAnController : Controller
 {
@@ -63,6 +63,7 @@ public sealed class MonAnController : Controller
             var khoa = BoDau(q);
             ds = ds.Where(m => BoDau(m.TenMon).Contains(khoa) || BoDau(m.TenNhomBuaAn).Contains(khoa)).ToList();
         }
+        ViewData["TatCaNhom"] = await _db.NhomBuaAns.OrderBy(n => n.ThuTu).Select(n => n.TenNhom).ToListAsync();   // kể cả nhóm chưa có món (VD Phụ sáng)
         ViewData["TuKhoa"] = q ?? string.Empty;
         ViewData["TongSo"] = tongSo;
 

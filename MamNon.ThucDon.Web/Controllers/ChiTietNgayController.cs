@@ -25,7 +25,7 @@ namespace MamNon.ThucDon.Web.Controllers;
 /// <see cref="ChiTietNgayTinhToanService.LayGiaViThatAsync"/> và
 /// <see cref="LuuGiaVi"/>.
 /// </summary>
-[Authorize]
+[Authorize(Policy = ChinhSach.KhongPhaiQuanLy)]
 [Route("chi-tiet-ngay")]
 public sealed class ChiTietNgayController : Controller
 {

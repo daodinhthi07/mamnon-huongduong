@@ -16,7 +16,7 @@ namespace MamNon.ThucDon.Web.Controllers;
 /// project MVC chính — 1 project duy nhất, dùng chung đăng nhập/phân quyền,
 /// không cần mở 2 ứng dụng khác nhau nữa.
 /// </summary>
-[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.ThuKho},{VaiTro.HieuTruong},{VaiTro.QuanTri}")]
+[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.ThuKho},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}")]
 [Route("menu-builder")]
 public sealed class MenuBuilderController : Controller
 {

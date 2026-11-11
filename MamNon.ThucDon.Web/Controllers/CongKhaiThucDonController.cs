@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace MamNon.ThucDon.Web.Controllers;
 
 /// <summary>Khu quản trị "CÔNG KHAI THỰC ĐƠN": nhân viên xem trước, bấm Công khai / Cập nhật công khai / Gỡ. Phải đăng nhập.</summary>
-[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri}")]
+[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}")]
 [Route("cong-khai-thuc-don")]
 public sealed class CongKhaiThucDonController : Controller
 {

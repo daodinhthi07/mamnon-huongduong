@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MamNon.ThucDon.Web.Controllers;
 
-[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.ThuKho},{VaiTro.HieuTruong},{VaiTro.QuanTri}")]
+[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.ThuKho},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}")]
 [Route("kho")]
 public sealed class KhoController : Controller
 {
@@ -154,6 +154,7 @@ public sealed class KhoController : Controller
     /// "Gia vị hằng ngày" thật — xem ChiTietNgayTinhToanService.LayGiaViThatAsync. Liệt kê
     /// TẤT CẢ hàng hoá đang phân loại 'Gia vị' (kể cả hàng chưa có định mức, để tiện thêm
     /// mới ngay tại đây, không cần trang riêng để "thêm dòng").</summary>
+    [Authorize(Policy = ChinhSach.KhongPhaiQuanLy)]
     [HttpGet("dinh-muc-gia-vi")]
     public async Task<IActionResult> DinhMucGiaVi()
     {
@@ -161,6 +162,7 @@ public sealed class KhoController : Controller
         return View(vm);
     }
 
+    [Authorize(Policy = ChinhSach.KhongPhaiQuanLy)]
     [HttpPost("dinh-muc-gia-vi")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DinhMucGiaVi(List<DongDinhMucGiaViVm> cacDong)

@@ -12,7 +12,7 @@ using ThucDonEntity = MamNon.ThucDon.Web.Infrastructure.Entities.ThucDon;
 
 namespace MamNon.ThucDon.Web.Controllers;
 
-[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri}")]
+[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}")]
 [Route("soan-thuc-don")]
 public sealed class ThucDonController : Controller
 {

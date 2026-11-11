@@ -18,7 +18,7 @@ namespace MamNon.ThucDon.Web.Controllers;
 /// gần nhất trước tháng) để khi soạn thực đơn mới tránh lặp món. Chỉ ĐỌC dữ liệu — không sửa gì; muốn sửa thì mở tuần
 /// đó trong Dashboard. Thực đơn dùng chung cho cả 3 cơ sở nên đọc từ cơ sở đại diện (giống Dashboard).
 /// </summary>
-[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri}")]
+[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}")]
 [Route("lich-su-thuc-don")]
 public sealed class LichSuThucDonController : Controller
 {

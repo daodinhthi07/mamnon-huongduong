@@ -16,7 +16,7 @@ namespace MamNon.ThucDon.Web.Controllers;
 /// xuống Excel và nhập từ Excel theo kiểu XÓA HẾT rồi nạp lại từ file (có bước xem trước trước khi áp dụng). Giá lưu ở hang_hoa.don_gia_gan_nhat — chính là giá mọi nơi đang dùng để tính tiền
 /// (Chi tiết ngày, xuất Excel, ...). Phiếu kho đã lưu giữ nguyên giá của lúc lập phiếu.
 /// </summary>
-[Authorize]
+[Authorize(Policy = ChinhSach.KhongPhaiQuanLy)]
 [Route("bang-gia")]
 public sealed class BangGiaController : Controller
 {

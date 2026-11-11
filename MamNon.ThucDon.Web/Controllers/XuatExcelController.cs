@@ -1,3 +1,4 @@
+using MamNon.ThucDon.Web.Identity;
 using MamNon.ThucDon.Web.Infrastructure.Data;
 using MamNon.ThucDon.Web.Services;
 using MamNon.ThucDon.Web.ViewModels;
@@ -55,6 +56,7 @@ public sealed class XuatExcelController : Controller
     /// <summary>Nút "Xuất Excel" ở trang Chi tiết ngày — 1 file/ngày gồm nhiều sheet: "Thực
     /// đơn" + "Chợ {Mã}" cho mỗi cơ sở active, đúng bố cục "BẢNG KÊ THỰC ĐƠN - CHI TIỀN
     /// CHỢ" gốc.</summary>
+    [Authorize(Policy = ChinhSach.KhongPhaiQuanLy)]
     [HttpGet("bang-ke-cho")]
     public async Task<IActionResult> BangKeCho(DateOnly ngay)
     {

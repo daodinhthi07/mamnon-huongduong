@@ -13,7 +13,7 @@ namespace MamNon.ThucDon.Web.Controllers;
 
 /// <summary>Nhập thực đơn từ file Excel tháng (mỗi sheet = 1 tuần, mẫu "THỰC ĐƠN CHO TRẺ"): đọc -> xem trước/đối chiếu món -> ghi vào thực đơn từng ngày.
 /// Chỉ ghi bảng thực đơn (thuc_don/ngay_hoc) + tạo món mới nếu người dùng chọn; không đụng giá, định mức, nguyên liệu.</summary>
-[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri}")]
+[Authorize(Roles = $"{VaiTro.NhaBep},{VaiTro.HieuTruong},{VaiTro.QuanTri},{VaiTro.QuanLy}")]
 [Route("nhap-thuc-don-excel")]
 public sealed class NhapThucDonExcelController : Controller
 {
