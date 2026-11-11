@@ -1,0 +1,223 @@
+@model ChiTietNgayViewModel
+@{
+    ViewData["Title"] = "Chi tiết thực đơn - Chi tiền chợ";
+    var thuHaiTuan = Model.Ngay.AddDays(-((int)Model.Ngay.DayOfWeek + 6) % 7);
+    string[] tenThu = { "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy" };
+}
+<div class="ctn">
+    <div class="hero">
+        <div class="eyebrow">MN Bạch Dương</div>
+        <h1>Chi tiết thực đơn — Chi tiền chợ</h1>
+        <div class="sub">Chọn ngày bất kỳ — đổi món là tính lại nguyên liệu ngay, không giới hạn theo tuần cố định</div>
+    </div>
+
+    <div class="selrow">
+        @foreach (var cs in Model.DsCoSo)
+        {
+            <a class="pill @(cs.Id == Model.CoSoId ? "active" : "")" href="@Url.Action("Index", new { coSoId = cs.Id, ngay = Model.Ngay.ToString("yyyy-MM-dd") })">@cs.TenCoSo</a>
+        }
+    </div>
+
+    @if (Model.CoSoId is not null)
+    {
+        <div class="daytabs">
+            @for (var i = 0; i < 6; i++)
+            {
+                var d = thuHaiTuan.AddDays(i);
+                <a class="daytab @(d == Model.Ngay ? "active" : "")" href="@Url.Action("Index", new { coSoId = Model.CoSoId, ngay = d.ToString("yyyy-MM-dd") })">
+                    <div class="d1">@tenThu[i]</div>
+                    <div class="d2">@d.ToString("dd/MM")</div>
+                </a>
+            }
+        </div>
+    }
+
+    <div class="card">
+        <h2><span class="badge">📅</span> Chọn cơ sở &amp; ngày khác</h2>
+        <input type="hidden" id="coSoIdHienTai" value="@Model.CoSoId" />
+        <input type="hidden" id="dsCoSoIds" value="@string.Join(",", Model.DsCoSo.Select(c => c.Id))" />
+        <div class="siso-grid">
+            <div>
+                <label>Ngày</label>
+                <input type="date" id="ngay" value="@Model.Ngay.ToString("yyyy-MM-dd")" />
+            </div>
+            <div style="align-self:end">
+                <button type="button" class="btn primary" id="btn-xem">Xem</button>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.CoSoId is null)
+    {
+        <div class="emptybox">Chọn cơ sở ở trên để bắt đầu.</div>
+    }
+    else
+    {
+        <input type="hidden" id="khoiIdMauGiao" value="@Model.KhoiIdMauGiao" />
+        <input type="hidden" id="khoiIdNhaTre" value="@Model.KhoiIdNhaTre" />
+
+        <div class="card">
+            <h2><span class="badge">1</span> Thực đơn trong ngày — @Model.TenCoSo</h2>
+
+            <div class="subhead">🍚 Mẫu giáo</div>
+            <div class="menugrid" id="menu-mau-giao">
+                @foreach (var bua in Model.BuaMauGiao)
+                {
+                    <div class="menuitem">
+                        <div class="lbl">@bua.TenBua</div>
+                        <select class="mon-mau-giao" data-bua-id="@bua.BuaId" data-ten-bua="@bua.TenBua">
+                            <option value="">-- chưa chọn --</option>
+                            @foreach (var mon in Model.DsMonAn.Where(m => m.NhomBuaAnId == bua.NhomBuaAnId))
+                            {
+                                <option value="@mon.Id" selected="@(mon.Id == bua.MonAnId)">@mon.TenMon</option>
+                            }
+                        </select>
+                    </div>
+                }
+            </div>
+
+            <div class="subhead">🍼 Nhà trẻ <button type="button" class="btn secondary" id="btn-ap-dung-mg-nt" style="margin-left:12px;padding:4px 12px;font-size:13px;">Áp dụng món Mẫu giáo cho Nhà trẻ</button></div>
+            <div class="menugrid" id="menu-nha-tre">
+                @foreach (var bua in Model.BuaNhaTre)
+                {
+                    <div class="menuitem">
+                        <div class="lbl">@bua.TenBua</div>
+                        <select class="mon-nha-tre" data-bua-id="@bua.BuaId" data-ten-bua="@bua.TenBua" data-dong-bo="@(bua.TenBua == "SÁNG" ? "1" : "0")">
+                            <option value="">-- chưa chọn --</option>
+                            @foreach (var mon in Model.DsMonAn.Where(m => m.NhomBuaAnId == bua.NhomBuaAnId))
+                            {
+                                <option value="@mon.Id" selected="@(mon.Id == bua.MonAnId)">@mon.TenMon</option>
+                            }
+                        </select>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><span class="badge">👥</span> Sĩ số &amp; tiền ăn 1 cháu</h2>
+            <div class="siso-grid">
+                <div><label>Ăn sáng (suất)</label><input type="number" min="0" id="soSuatAnSang" value="@Model.SoSuatAnSang" /></div>
+                <div><label>Mẫu giáo (suất)</label><input type="number" min="0" id="soSuatMauGiao" value="@Model.SoSuatMauGiao" /></div>
+                <div><label>Nhà trẻ (suất)</label><input type="number" min="0" id="soSuatNhaTre" value="@Model.SoSuatNhaTre" /></div>
+                <div><label>Tiền/cháu — Sáng</label><input type="number" min="0" id="tienAnSang" value="@Model.TienAnSang" /></div>
+                <div><label>Tiền/cháu — Mẫu giáo</label><input type="number" min="0" id="tienMauGiao" value="@Model.TienMauGiao" /></div>
+                <div><label>Tiền/cháu — Nhà trẻ</label><input type="number" min="0" id="tienNhaTre" value="@Model.TienNhaTre" /></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><span class="badge">2</span> Theo dõi xuất kho gia vị hằng ngày</h2>
+            @if (!Model.GiaViThat.Any())
+            {
+                <p class="trong-rong">Chưa cấu hình hàng hoá/định mức gia vị nào.
+                    Vào <a asp-controller="Kho" asp-action="DinhMucGiaVi">Định mức gia vị</a> để thêm — mục này sẽ tự hiện đúng danh sách cố định ngay sau khi lưu.</p>
+            }
+            else
+            {
+                <p class="trong-rong">
+                    @if (Model.CoPhieuGiaVi)
+                    {
+                        <text>Đang hiện đúng phiếu xuất kho đã lưu cho ngày này (những dòng chưa từng sửa vẫn tự tính theo định mức).</text>
+                    }
+                    else
+                    {
+                        <text>Chưa chỉnh gì cho ngày này — số đang hiện TỰ TÍNH theo <a asp-controller="Kho" asp-action="DinhMucGiaVi">định mức cố định</a> × sĩ số ăn.</text>
+                    }
+                    Trang chỉ để XEM — không sửa/xóa nguyên liệu ở đây.
+                </p>
+                <div class="tablewrap">
+                    <table id="bang-gia-vi">
+                        <thead><tr><th>Thực phẩm</th><th>ĐVT</th><th>SL Sáng</th><th>SL N.Trẻ</th><th>SL M.Giáo</th><th>Đơn giá</th><th>TT Sáng</th><th>TT N.Trẻ</th><th>TT M.Giáo</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.GiaViThat)
+                            {
+                                var rid = "gia-vi-" + r.HangHoaId;
+                                <tr id="@(rid)-xem" data-rid="@rid">
+                                    <td>@r.TenHang</td><td>@r.Dvt</td>
+                                    <td>@r.SlAnSang</td><td>@r.SlNhaTre</td><td>@r.SlMauGiao</td>
+                                    <td>@r.DonGia.ToString("N0")</td>
+                                    <td>@r.TtAnSang.ToString("N0")</td><td>@r.TtNhaTre.ToString("N0")</td><td>@r.TtMauGiao.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="total">
+                                <td colspan="6">Tổng cộng</td>
+                                <td>@Model.TongTienGiaViAnSang.ToString("N0")</td>
+                                <td>@Model.TongTienGiaViNhaTre.ToString("N0")</td>
+                                <td>@Model.TongTienGiaViMauGiao.ToString("N0")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+            <input type="hidden" id="tongTienGiaViAnSang" value="@Model.TongTienGiaViAnSang.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+            <input type="hidden" id="tongTienGiaViNhaTre" value="@Model.TongTienGiaViNhaTre.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+            <input type="hidden" id="tongTienGiaViMauGiao" value="@Model.TongTienGiaViMauGiao.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+        </div>
+
+        <div class="card">
+            <h2><span class="badge">3</span> Chi tiền thực phẩm sáng</h2>
+            <p class="trong-rong" id="ghi-chu-sang"></p>
+            <div class="tablewrap">
+                <table id="bang-sang">
+                    <thead><tr><th>Thực phẩm</th><th>ĐVT</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><span class="badge">4</span> Chi tiền thực phẩm ăn chính + xế</h2>
+            <p class="trong-rong" id="ghi-chu-chinh-xe"></p>
+            <div class="tablewrap">
+                <table id="bang-chinh-xe">
+                    <thead><tr><th>Thực phẩm</th><th>ĐVT</th><th>SL N.Trẻ</th><th>SL M.Giáo</th><th>Đơn giá</th><th>TT N.Trẻ</th><th>TT M.Giáo</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><span class="badge">Σ</span> Tổng cộng</h2>
+            <p>Ăn sáng: <strong id="tong-an-sang">0</strong>đ &nbsp;·&nbsp; Nhà trẻ: <strong id="tong-nha-tre">0</strong>đ &nbsp;·&nbsp; Mẫu giáo: <strong id="tong-mau-giao">0</strong>đ</p>
+            <div class="tong-ngay" id="tong-ca-ngay">0đ</div>
+        </div>
+
+        <div class="actions">
+            <button type="button" class="btn" onclick="chiTietNgayLuu(false)" title="Lưu thực đơn + sĩ số + tiền ăn từ Thứ 2 đến Thứ 7 của cả 3 cơ sở">Lưu nháp cả tuần</button>
+            <button type="button" class="btn secondary" onclick="chiTietNgayNgauNhien()" title="Chọn ngẫu nhiên món từng bữa của NGÀY NÀY từ tuần gần nhất ở Lịch sử">🎲 Ngẫu nhiên ngày này</button>
+            <button type="button" class="btn secondary" onclick="chiTietNgayXoaMonNgay()" title="Xóa món đã chọn của ngày này">🧹 Xóa món ngày này</button>
+            <button type="button" class="btn primary" onclick="chiTietNgayXuatExcel()">Xuất Excel</button>
+                <label style="font-size:13px;margin-left:10px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="chkCanDoiChenhLech" checked /> Làm tròn &amp; cân đối như file mẫu (Chênh lệch = 0)</label>
+        </div>
+
+        <form id="form-chi-tiet-ngay-luu" asp-controller="ChiTietNgay" asp-action="Luu" method="post" style="display:none">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="coSoId" value="@Model.CoSoId" />
+            <input type="hidden" name="ngay" value="@Model.Ngay.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="khoiIdMauGiao" value="@Model.KhoiIdMauGiao" />
+            <input type="hidden" name="khoiIdNhaTre" value="@Model.KhoiIdNhaTre" />
+            <input type="hidden" name="monMauGiaoJson" id="hiddenMonMauGiaoJson" value="{}" />
+            <input type="hidden" name="monNhaTreJson" id="hiddenMonNhaTreJson" value="{}" />
+            <input type="hidden" name="soSuatAnSang" id="hiddenSoSuatAnSang" value="0" />
+            <input type="hidden" name="soSuatMauGiao" id="hiddenSoSuatMauGiao" value="0" />
+            <input type="hidden" name="soSuatNhaTre" id="hiddenSoSuatNhaTre" value="0" />
+            <input type="hidden" name="tienAnSang" id="hiddenTienAnSang" value="0" />
+            <input type="hidden" name="tienMauGiao" id="hiddenTienMauGiao" value="0" />
+            <input type="hidden" name="tienNhaTre" id="hiddenTienNhaTre" value="0" />
+            <input type="hidden" name="guiDuyet" id="hiddenGuiDuyet" value="false" />
+            <input type="hidden" name="xuatExcelSauKhiLuu" id="hiddenXuatExcelSauKhiLuu" value="false" />
+            <input type="hidden" name="excelGiaViJson" id="hiddenExcelGiaViJson" />
+            <input type="hidden" name="excelSangJson" id="hiddenExcelSangJson" />
+            <input type="hidden" name="excelChinhJson" id="hiddenExcelChinhJson" />
+            <input type="hidden" name="draftTuanJson" id="hiddenDraftTuanJson" />
+            <input type="hidden" name="canDoiChenhLech" id="hiddenCanDoiChenhLech" value="true" />
+            <input type="hidden" name="luuCaTuan" id="hiddenLuuCaTuan" value="false" />
+        </form>
+    }
+</div>
+@section Scripts {
+    <script src="~/js/chi-tiet-ngay.js" asp-append-version="true"></script>
+}
