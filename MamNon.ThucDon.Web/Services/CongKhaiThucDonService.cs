@@ -109,6 +109,21 @@ public sealed class CongKhaiThucDonService
         }
     }
 
+    /// <summary>Lưu Phụ sáng / Phụ chiều CHỈ cho các ngày được truyền (0 = Thứ 2 ... 5 = Thứ 7); ngày khác giữ nguyên. Dùng ở Trang chủ.</summary>
+    public async Task LuuPhuTheoNgayAsync(DateOnly tuan, IReadOnlyDictionary<int, (string Sang, string Chieu)> theoNgay)
+    {
+        tuan = ThuHai(tuan);
+        var key = tuan.ToString("yyyy-MM-dd");
+        foreach (var (i, p) in theoNgay)
+        {
+            if (i < 0 || i > 5) continue;
+            var sa = (p.Sang ?? "").Trim();
+            var ch = (p.Chieu ?? "").Trim();
+            await _ck.Database.ExecuteSqlInterpolatedAsync(
+                $"INSERT OR REPLACE INTO cong_khai_phu (tuan_bat_dau, ngay, phu_sang, phu_chieu) VALUES ({key}, {i}, {sa}, {ch})");
+        }
+    }
+
     /// <summary>Thêm bữa PHỤ SÁNG / PHỤ CHIỀU (cả 2 khối) vào các dòng của tuần. Ngày đã nhập phụ chiều thì thay "Xế" sữa của Nhà trẻ.</summary>
     private static List<Dong> GhepPhu(DateOnly thuHai, List<Dong> dong, HashSet<DateOnly> nghi,
         Dictionary<int, (string Sang, string Chieu)> phu, string macDinhChieu)
@@ -225,14 +240,26 @@ public sealed class CongKhaiThucDonService
     }
 
     /// <summary>Công khai / cập nhật công khai: chụp lại thực đơn nội bộ của tuần vào bảng công khai (thay bản cũ nếu có).</summary>
-    public async Task<(bool Ok, string Message)> CongKhaiAsync(DateOnly tuan, string? nguoi)
+    /// <param name="cacNgay">null/rỗng = công khai CẢ TUẦN. Có giá trị (0 = Thứ 2 ... 5 = Thứ 7) = chỉ CÁC NGÀY ĐÓ hiện cho phụ huynh
+    /// (bản chụp cũ của tuần được thay hẳn, các ngày không chọn — thường là các ngày sau — bị ẩn). Trang chủ gửi 0..k = "đến hết ngày k".</param>
+    public async Task<(bool Ok, string Message)> CongKhaiAsync(DateOnly tuan, string? nguoi, IReadOnlyCollection<int>? cacNgay = null)
     {
         tuan = ThuHai(tuan);
         var (dong, nghi, _) = await DocNoiBoAsync(tuan);
-        if (!dong.Any(d => !d.Bua.StartsWith("PHỤ"))) return (false, "Tuần này chưa có món nào trong thực đơn nên chưa công khai được.");
+
+        var theoNgay = cacNgay is { Count: > 0 } && cacNgay.Count < 6;
+        var ngayChon = theoNgay
+            ? cacNgay!.Where(i => i >= 0 && i <= 5).Select(i => tuan.AddDays(i)).ToHashSet()
+            : Enumerable.Range(0, 6).Select(i => tuan.AddDays(i)).ToHashSet();
+
+        var dongChon = dong.Where(d => ngayChon.Contains(d.Ngay)).ToList();
+        if (!dongChon.Any(d => !d.Bua.StartsWith("PHỤ")) && !ngayChon.Any(nghi.Contains))
+            return (false, theoNgay ? "Các ngày đã chọn chưa có món nào trong thực đơn nên chưa công khai được."
+                                    : "Tuần này chưa có món nào trong thực đơn nên chưa công khai được.");
 
         var cu = await _ck.CongKhaiTuans.Include(x => x.Mons).FirstOrDefaultAsync(x => x.TuanBatDau == tuan);
         var moi = cu is null;
+        var nghiCu = new HashSet<DateOnly>();
         if (cu is null)
         {
             cu = new CongKhaiTuan { TuanBatDau = tuan, PhienBan = 1 };
@@ -240,19 +267,27 @@ public sealed class CongKhaiThucDonService
         }
         else
         {
-            _ck.CongKhaiMons.RemoveRange(cu.Mons);
-            cu.Mons.Clear();
+            var xoa = cu.Mons.ToList();   // thay hẳn bản chụp cũ của tuần: ngày không được chọn sẽ không còn hiện
+            _ck.CongKhaiMons.RemoveRange(xoa);
+            foreach (var m in xoa) cu.Mons.Remove(m);
             cu.PhienBan += 1;
         }
         cu.CongKhaiLuc = DateTime.UtcNow;
         cu.NguoiCongKhai = nguoi;
         cu.DangCongKhai = true;
-        cu.NgayNghi = string.Join(",", nghi.OrderBy(x => x).Select(x => x.ToString("yyyy-MM-dd")));
-        foreach (var d in dong)
+
+        nghiCu.RemoveWhere(ngayChon.Contains);
+        foreach (var n in nghi.Where(ngayChon.Contains)) nghiCu.Add(n);
+        cu.NgayNghi = string.Join(",", nghiCu.OrderBy(x => x).Select(x => x.ToString("yyyy-MM-dd")));
+
+        foreach (var d in dongChon)
             cu.Mons.Add(new CongKhaiMon { Ngay = d.Ngay, Khoi = d.Khoi, ThuTuBua = d.ThuTu, TenBua = d.Bua, TenMon = d.Mon });
 
         await _ck.SaveChangesAsync();
-        return (true, moi ? $"Đã công khai {TieuDeTuan(tuan)}." : $"Đã cập nhật công khai {TieuDeTuan(tuan)} (phiên bản {cu.PhienBan}).");
+        var pham = theoNgay
+            ? $"{TieuDeTuan(tuan)} từ {ngayChon.Min():dd/MM} đến hết {ngayChon.Max():dd/MM}"
+            : TieuDeTuan(tuan);
+        return (true, moi ? $"Đã công khai {pham}." : $"Đã cập nhật công khai {pham} (phiên bản {cu.PhienBan}).");
     }
 
     public async Task<bool> GoCongKhaiAsync(DateOnly tuan)
