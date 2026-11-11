@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Nhập thực đơn từ Excel";
+    var tuanDaNhap = (TempData["TuanDaNhap"] as string ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+}
+
+<h1>Nhập thực đơn từ file Excel</h1>
+<p class="ls-ghi-chu">Tải lên file thực đơn tháng (mỗi sheet là một tuần, mẫu "THỰC ĐƠN CHO TRẺ"). Hệ thống đọc từng ngày – từng bữa – từng khối,
+    đối chiếu với danh sách món, cho bạn <strong>xem trước</strong> rồi mới ghi vào thực đơn các ngày trong tuần. Chỉ ghi thực đơn; không đổi giá, định mức hay nguyên liệu.</p>
+
+@if (tuanDaNhap.Length > 0)
+{
+    <div class="soan-thucdon-actions" style="margin-bottom:12px">
+        <span>Mở tuần đã nhập:</span>
+        @foreach (var t in tuanDaNhap)
+        {
+            <a class="btn btn-secondary" href="@Url.Content("~/")?tuanBatDau=@t">@DateOnly.Parse(t).ToString("dd/MM/yyyy")</a>
+        }
+    </div>
+}
+
+<form method="post" asp-action="Xem" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="file" name="file" accept=".xlsx" class="form-control" style="max-width:420px;display:inline-block" required />
+    <button type="submit" class="btn btn-primary">Đọc file &amp; xem trước</button>
+</form>
