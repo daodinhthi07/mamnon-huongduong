@@ -1,0 +1,37 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Đăng nhập - Thực đơn &amp; Kho</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:wght@500;600&display=swap" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <div class="login-box">
+        <h3>Đăng nhập — Hệ thống Thực đơn &amp; Kho</h3>
+
+        <form asp-controller="Account" asp-action="Login" method="post">
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div asp-validation-summary="All" class="alert-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="TenDangNhap"></label>
+                <input asp-for="TenDangNhap" class="form-control" autofocus />
+            </div>
+
+            <div class="form-group">
+                <label asp-for="MatKhau"></label>
+                <input asp-for="MatKhau" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Đăng nhập</button>
+        </form>
+    </div>
+</body>
+</html>
