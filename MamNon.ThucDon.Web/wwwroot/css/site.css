@@ -1,0 +1,221 @@
+/* ==========================================================================
+   Giao diện CHUNG cho mọi trang — lấy đúng phong cách trang "Chi tiết thực đơn - Chi tiền chợ":
+   nền kem, thẻ trắng bo góc, màu nhấn nâu cam, chữ Be Vietnam Pro + tiêu đề Fraunces.
+   Dùng :where() cho các luật chung (độ ưu tiên = 0) để màu riêng của từng trang (VD Dashboard
+   xanh lá/hồng) vẫn đè được.
+   ========================================================================== */
+:root{
+  --bg:#fdf1f5; --card:#ffffff; --ink:#2c2024; --ink-soft:#7d6670;
+  --line:#f0d6df; --accent:#d4678a; --accent-soft:#fbe0e9; --accent-ink:#97294f;
+  --green:#4a7c59; --green-soft:#e3ede4;
+  --blue:#3f6fa8; --blue-soft:#e4ecf5;
+  --gold:#b8952f; --gold-soft:#f4ecd6;
+  --red:#a3372c; --red-soft:#fbeceb;
+  --shadow: 0 1px 2px rgba(120,30,60,0.06), 0 4px 16px rgba(120,30,60,0.07);
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Be Vietnam Pro','Segoe UI',system-ui,sans-serif; line-height:1.45; }
+a{ color:var(--accent-ink); }
+h1{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(20px,4.4vw,28px); margin:6px 0 10px; }
+h2{ font-size:16px; font-weight:700; margin:18px 0 10px; }
+h3{ font-size:14.5px; font-weight:700; margin:14px 0 8px; }
+
+/* ---------- Thanh menu + khung nội dung ---------- */
+.topnav{ position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+         padding:10px 16px; background:var(--card); border-bottom:1px solid var(--line); font-size:13px; }
+.topnav-brand{ font-weight:800; color:var(--ink); flex:0 0 auto; }
+.topnav-links{ display:flex; flex-wrap:wrap; gap:6px 14px; flex:1 1 auto; }
+.topnav-links a{ color:var(--ink-soft); text-decoration:none; font-weight:600; padding:4px 2px; border-bottom:2px solid transparent; }
+.topnav-links a:hover{ color:var(--accent-ink); }
+.topnav-links a.active{ color:var(--accent-ink); border-bottom-color:var(--accent); }
+.topnav-account{ display:flex; align-items:center; gap:10px; flex:0 0 auto; color:var(--ink-soft); }
+.topnav-account a{ color:var(--accent-ink); text-decoration:none; font-weight:700; }
+.topnav-account .btn-link{ background:none; border:none; color:var(--accent-ink); font-weight:700; cursor:pointer; font-size:13px; padding:0; font-family:inherit; text-decoration:none; }
+.nav-user{ font-size:13px; }
+@media (max-width:720px){ .topnav{ flex-wrap:nowrap; } .topnav-brand{ display:none; } }
+
+.app-main{ max-width:1040px; margin:0 auto; padding:18px 16px 60px; }
+
+/* ---------- Thông báo ---------- */
+.alert-thanh-cong, .alert-success{ background:var(--green-soft); color:#2f5a3b; border:1px solid #c6dcc9; padding:10px 14px; border-radius:12px; margin-bottom:14px; font-size:13.5px; }
+.alert-danger{ background:var(--red-soft); color:var(--red); border-radius:12px; padding:0; margin-bottom:12px; font-size:13.5px; }
+.alert-danger:not(:empty){ padding:10px 14px; border:1px solid #efc9c5; }
+.alert-danger ul{ margin:0; padding-left:18px; }
+.text-danger{ color:var(--red); font-weight:600; }
+.text-success{ color:var(--green); font-weight:600; }
+
+/* ---------- Nút ---------- */
+.btn{ display:inline-block; padding:11px 20px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--ink);
+      font-weight:700; font-size:14px; cursor:pointer; text-decoration:none; font-family:inherit; }
+.btn:hover{ border-color:var(--accent); }
+.btn.primary, .btn-primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.btn-primary:hover, .btn.primary:hover{ background:#bd5072; }
+.btn.secondary, .btn-secondary{ background:var(--card); color:var(--ink); border-color:var(--line); }
+.btn-warning{ background:var(--gold); color:#fff; border-color:var(--gold); }
+.btn:disabled{ opacity:.5; cursor:not-allowed; }
+.btn-link, .btn.btn-link{ background:none; border:none; color:var(--accent-ink); font-weight:700; cursor:pointer; font-size:12.6px;
+                          padding:2px 4px; font-family:inherit; text-decoration:underline; border-radius:0; }
+.btn-link-danger{ color:var(--red); }
+
+/* ---------- Form ---------- */
+.form-group{ margin-bottom:14px; }
+.form-group label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:4px; }
+.form-control{ width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:14px; background:#fff; color:var(--ink); font-family:inherit; }
+.form-control:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+.soan-thucdon-header{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px; padding:14px 16px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+.soan-thucdon-header .form-group{ min-width:180px; margin-bottom:0; }
+.soan-thucdon-actions{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:14px 0; }
+.soan-thucdon-thongbao{ color:var(--green); }
+.actions{ display:flex; gap:10px; margin:18px 0 40px; }
+
+/* ---------- Bảng ---------- */
+.table{ border-collapse:collapse; width:100%; margin-bottom:1.5rem; font-size:13px; background:var(--card); border:1px solid var(--line); }
+.table th, .table td{ padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
+.table thead th{ background:var(--bg); color:var(--ink-soft); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
+.table tfoot td{ background:var(--gold-soft); font-weight:800; border-top:2px solid var(--gold); }
+.row-vuot-dinh-muc{ background:var(--red-soft); }
+.tablewrap{ overflow-x:auto; }
+tr.total td{ font-weight:800; background:var(--gold-soft); border-top:2px solid var(--gold); }
+
+/* ---------- Thẻ ---------- */
+.card, .phieu-duyet-card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
+.card h2{ font-size:14.5px; margin:0 0 12px; display:flex; align-items:center; gap:8px; font-weight:700; }
+.card h2 .badge{ width:22px; height:22px; border-radius:7px; background:var(--accent-soft); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex:0 0 auto; }
+.subhead{ font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:700; margin:14px 0 8px; }
+.emptybox{ padding:40px 0; text-align:center; color:var(--ink-soft); }
+.trong-rong{ color:var(--ink-soft); font-style:italic; font-size:13px; margin-top:6px; }
+.tong-ngay{ font-size:22px; font-weight:800; color:var(--accent-ink); font-family:'Fraunces',serif; }
+
+/* ---------- Đăng nhập / không có quyền ---------- */
+.login-box{ max-width:380px; margin:5rem auto; padding:28px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+.login-box h3{ font-family:'Fraunces',serif; font-size:20px; margin:0 0 16px; }
+
+/* ---------- Trang Chi tiết thực đơn - Chi tiền chợ ---------- */
+.mon-tag{ font-size:10.5px; color:var(--ink-soft); font-style:italic; font-weight:400; margin-top:1px; }
+.hero{ padding:14px 0 10px; }
+.hero .eyebrow{ font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; }
+.hero h1{ margin:3px 0 2px; }
+.hero .sub{ font-size:13px; color:var(--ink-soft); }
+.selrow{ display:flex; gap:8px; overflow-x:auto; padding:10px 0 4px; }
+.pill{ flex:0 0 auto; padding:8px 15px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); font-weight:600; font-size:13.5px; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-block; }
+.pill:hover{ border-color:var(--accent); }
+.pill.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.daytabs{ display:flex; gap:6px; overflow-x:auto; padding:4px 0 12px; }
+.daytab{ flex:0 0 auto; padding:9px 14px; border-radius:12px; border:1px solid var(--line); background:var(--card); text-align:center; min-width:78px; text-decoration:none; }
+.daytab .d1{ font-size:12.5px; font-weight:700; color:var(--ink); }
+.daytab .d2{ font-size:10.5px; color:var(--ink-soft); margin-top:1px; }
+.daytab.active{ background:var(--accent-soft); border-color:var(--accent); }
+.daytab.active .d1{ color:var(--accent-ink); }
+.menugrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
+.menuitem{ background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:9px 12px; }
+.menuitem .lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:700; display:flex; align-items:center; gap:5px; }
+.menuitem select{ width:100%; margin-top:6px; border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:13.5px; background:#fff; color:var(--ink); }
+.mon-search-wrap{ position:relative; margin-top:6px; }
+.mon-search-native{ display:none; }
+.mon-search-input{ width:100%; border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:13.5px; background:#fff; color:var(--ink); font-family:inherit; }
+.mon-search-input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+.mon-search-list{ display:none; position:absolute; z-index:40; top:calc(100% + 4px); left:0; right:0; max-height:220px; overflow-y:auto; background:#fff; border:1px solid var(--line); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.12); }
+.mon-search-item{ padding:7px 10px; font-size:13.5px; cursor:pointer; }
+.mon-search-item:hover, .mon-search-item.active{ background:var(--accent-soft); }
+.mon-search-empty{ padding:7px 10px; font-size:13px; color:var(--ink-soft); font-style:italic; }
+.siso-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+.siso-grid label{ font-size:11.5px; color:var(--ink-soft); font-weight:600; }
+.siso-grid input{ width:100%; margin-top:4px; border:1px solid var(--line); border-radius:8px; padding:7px 9px; font-size:14px; }
+/* Bảng số liệu của trang Chi tiết ngày: số căn phải, 2 cột đầu căn trái */
+.ctn table{ width:100%; border-collapse:collapse; font-size:12.6px; }
+.ctn th, .ctn td{ padding:7px 8px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+.ctn th:first-child, .ctn td:first-child, .ctn td:nth-child(2), .ctn th:nth-child(2){ text-align:left; white-space:normal; }
+.ctn thead th{ background:var(--bg); color:var(--ink-soft); font-weight:700; font-size:11px; text-transform:uppercase; }
+.gia-vi-actions{ white-space:nowrap; }
+.inline-form, .inline-form-sua{ display:inline; }
+.inline-form-sua{ display:flex; flex-wrap:wrap; gap:10px; align-items:end; }
+.inline-form-sua label{ font-size:11px; color:var(--ink-soft); font-weight:600; display:flex; flex-direction:column; gap:3px; }
+.inline-form-sua input[type=number]{ width:90px; border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:13px; }
+#bang-gia-vi tr[id$="-sua"] td{ background:var(--accent-soft); }
+
+/* ---------- Trang Chi tiết chợ (/cho/chi-tiet) ---------- */
+.cho-topbar{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px; }
+.cho-tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 14px; }
+.cho-tab{ padding:8px 15px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); font-weight:600; font-size:13.5px; cursor:pointer; text-decoration:none; font-family:inherit; }
+.cho-tab:hover{ border-color:var(--accent); }
+.cho-tab.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.cho-panel-head{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; }
+.cho-panel-actions{ display:flex; gap:8px; }
+.cho-card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
+.cho-card h2{ margin:0 0 12px; font-size:14.5px; }
+.cho-empty{ color:var(--ink-soft); font-style:italic; font-size:13px; }
+.cho-note{ color:var(--ink-soft); font-size:13px; }
+.cho-menugrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+.cho-menugrid > div{ background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:9px 12px; }
+.lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:700; }
+.dish{ font-size:13.5px; margin-top:3px; }
+.cho-table{ font-size:12.6px; }
+.cho-editbox{ background:var(--accent-soft); border:1px solid #f2c3d3; border-radius:16px; padding:14px 16px; margin-bottom:14px; }
+.cho-editbox .lead{ font-weight:700; color:var(--accent-ink); margin-bottom:10px; }
+.editgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; }
+.efield label{ display:block; font-size:11.5px; color:var(--ink-soft); font-weight:600; }
+.efield input{ width:100%; margin-top:4px; border:1px solid var(--line); border-radius:8px; padding:7px 9px; font-size:14px; background:#fff; }
+.editactions{ display:flex; gap:10px; margin-top:12px; }
+.note{ font-size:12.5px; color:var(--ink-soft); margin-top:10px; }
+.changed-tag{ background:var(--gold-soft); color:var(--gold); border-radius:6px; padding:1px 7px; font-size:11px; font-weight:700; margin-left:6px; }
+.cho-chipgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin-bottom:14px; }
+.cho-chip{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
+.cho-chip .k{ font-size:11.5px; color:var(--ink-soft); font-weight:600; }
+.cho-chip .v{ font-size:18px; font-weight:800; margin-top:3px; }
+.cho-chip.gold{ background:var(--gold-soft); border-color:#e6d6a2; }
+.cho-chip.green{ background:var(--green-soft); border-color:#c6dcc9; }
+.cho-chip.green .v{ color:var(--green); }
+.cho-chip.red{ background:var(--red-soft); border-color:#efc9c5; }
+.cho-chip.red .v{ color:var(--red); }
+.cho-signrow{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; text-align:center; margin-top:14px; }
+.cho-signrow .role{ font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:700; }
+.cho-signrow .name{ margin-top:4px; font-weight:600; }
+
+/* ---------- Dashboard — màu theo đúng 2 mẫu file thật: Mẫu giáo xanh lá, Nhà trẻ hồng ---------- */
+.dashboard-table{ table-layout:fixed; width:100%; }
+.dashboard-table td, .dashboard-table th{ vertical-align:middle; }
+.dashboard-table select.dashboard-chon-mon{ width:100%; border:none; background:transparent; font-size:.9rem; }
+.dashboard-mau-giao thead th{ background:#8FAD6E; color:#fff; }
+.dashboard-mau-giao .dashboard-ten-bua{ background:#E2EFDA; font-weight:600; }
+.dashboard-mau-giao tbody td:not(.dashboard-ten-bua){ background:#F3F8F0; }
+.dashboard-nha-tre thead th{ background:#D98A8A; color:#fff; }
+.dashboard-nha-tre .dashboard-ten-bua{ background:#F2DCDB; font-weight:600; }
+.dashboard-nha-tre tbody td:not(.dashboard-ten-bua){ background:#FCEFEF; }
+
+/* ---- Lịch sử thực đơn theo tháng (tuần A, B, C, D, E) ---- */
+.ls-ghi-chu{ color:var(--ink-soft, #6b655a); font-size:.92rem; max-width:900px; }
+.ls-chon-thang{ display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin:12px 0 18px; }
+.ls-tuan{ border:1px solid var(--line, #e3ded3); border-radius:10px; margin:12px 0; background:var(--card, #fff); }
+.ls-tuan > summary{ cursor:pointer; padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; list-style:none; }
+.ls-tuan > summary::-webkit-details-marker{ display:none; }
+.ls-tuan-noi-dung{ padding:4px 16px 16px; }
+.ls-chu-cai{ display:inline-flex; width:30px; height:30px; border-radius:8px; align-items:center; justify-content:center; font-weight:800; background:var(--accent-soft, #e8efe0); color:var(--accent-ink, #3d5a24); }
+.ls-khoang-ngay{ color:var(--ink-soft, #6b655a); }
+.ls-vat-thang{ font-size:.8rem; color:#8a6d1d; background:#fbf3d9; border-radius:6px; padding:2px 8px; }
+.ls-tt{ margin-left:auto; font-size:.8rem; font-weight:700; border-radius:999px; padding:3px 12px; }
+.ls-tt-duyet{ background:#e2efda; color:#2f5d1a; }
+.ls-tt-cho{ background:#fbf3d9; color:#8a6d1d; }
+.ls-tt-nhap{ background:#ececec; color:#555; }
+.ls-tt-chua{ background:#f6e3e3; color:#9a3b3b; }
+.ls-trong{ color:#9a948a; }
+.ls-bang-mon td, .ls-bang-mon th{ vertical-align:top; }
+.ls-bang-mon tr.ls-lap td{ background:#fff8e1; }
+
+/* ---- Áp dụng tuần mẫu ---- */
+.ls-loi{ background:#fbe9e9; color:#9a3b3b; border:1px solid #efc6c6; border-radius:8px; padding:10px 14px; margin:10px 0; max-width:900px; }
+.ls-ds-mau{ margin:6px 0 12px 18px; }
+.ls-bang-mon input.form-control{ max-width:110px; }
+
+/* ---- Tìm món trong Quản lý món ăn ---- */
+.ma-tim{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin:12px 0 6px; }
+.ma-tim .form-control{ min-width:220px; }
+.ma-tim-check{ display:flex; flex-direction:column; gap:2px; }
+.ma-tim-check label{ font-weight:400; font-size:.9rem; }
+.ma-dem{ color:var(--ink-soft, #6b655a); margin:4px 0 8px; }
+
+/* ---- Ô chọn món gõ tìm kiếm được dùng chung (wwwroot/js/search-select.js, thêm data-tim-mon vào <select>) ---- */
+.tim-mon-wrap{ margin-top:0; }
+.mon-search-list.mon-search-fixed{ position:fixed; z-index:1000; min-width:260px; }
+.mon-search-item.kb{ background:var(--accent-soft); }
+.mon-search-input{ text-overflow:ellipsis; }
+.tim-mon-tat .mon-search-input, .mon-search-input:disabled{ background:#f1efe9; color:var(--ink-soft); cursor:not-allowed; }
