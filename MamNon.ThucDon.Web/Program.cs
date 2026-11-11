@@ -57,6 +57,13 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(ChinhSach.KhongPhaiQuanLy, policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireAssertion(ctx => !ctx.User.IsInRole(VaiTro.QuanLy)));
+});
+
 // ---------------------------------------------------------------------
 // Services tính toán + xuất Excel (thuần, không phụ thuộc hạ tầng UI)
 // ---------------------------------------------------------------------
@@ -103,10 +110,13 @@ app.MapControllerRoute(
 // Khởi tạo dữ liệu nền tảng lúc chạy lần đầu (idempotent — chạy lại vô hại)
 await app.SeedRolesAsync();
 await app.SeedTaiKhoanHieuTruongMacDinhAsync();
+await app.SeedTaiKhoanQuanLyAsync();   // tài khoản "quanly" (vai trò QuanLy, bị chặn vài trang) — idempotent
 await app.DamBaoCotGhiChuHangHoaAsync();   // thêm cột hang_hoa.ghi_chu nếu CSDL chưa có (idempotent)
 await app.DamBaoCotNguyenLieuChinhAsync();   // thêm cột dinh_luong_nguyen_lieu.la_nguyen_lieu_chinh nếu CSDL chưa có (idempotent) — PHẢI chạy trước mọi truy vấn công thức món
 await app.DamBaoBangQuyTacNguyenLieuAsync();   // bảng quy tắc nguyên liệu cố định (sửa ở /quy-tac-nguyen-lieu) + nạp quy tắc mặc định lần đầu
 await app.DamBaoBangCongKhaiAsync();   // bảng công khai thực đơn phụ huynh (idempotent)
 await app.DamBaoCotDinhLuongNhaTreAsync();   // cột dinh_luong_nha_tre (định lượng riêng Nhà trẻ) ở bảng chung + bảng theo chợ — gọi SAU dòng trên vì bảng theo chợ do nó tạo
+
+await app.DamBaoMonPhuAsync();   // món phụ (Phụ sáng / Phụ chiều) trong Danh mục món ăn — gọi SAU DamBaoBangCongKhaiAsync (idempotent)
 
 app.Run();
